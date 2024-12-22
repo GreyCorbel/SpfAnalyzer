@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <Target Name="CopyFiles" AfterTargets="CopyFilesToOutputDirectory">
+    <ItemGroup>
+	      <!-- Because this ItemGroup is inside the target, this will enumerate
+            all files just before calling Copy. If the ItemGroup were outside
+            the target , it would enumerate the files during evaluation, before
+            the build starts, which may miss files created during the build. -->
+        <BuildOutput Include="$(TargetPath)" />
+	</ItemGroup>
+    <Copy 
+      SourceFiles="@(BuildOutput)" 
+      DestinationFolder="$(ProjectDir)/../Module/SpfAnalyzer/lib/net8.0/" />
+  </Target>
+
+</Project>
