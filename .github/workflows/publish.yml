@@ -18,14 +18,45 @@ jobs:
     runs-on: windows-latest
     env: 
       MODULE_NAME: SpfAnalyzer
+
     steps:
     - uses: actions/checkout@v4
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+    
     - name: Restore dependencies
-      run: dotnet restore
+      run:  dotnet restore
+
     - name: Build
-      run: dotnet build --no-restore
+      run:  dotnet build --no-restore
+
+    - name: Install AzureSignTool
+      run:  dotnet tool install --global AzureSignTool
+      
+    - name: Sign files
+      shell: pwsh
+      run: |
+        $files = Get-ChildItem "$env:GITHUB_WORKSPACE\Module\$env:MODULE_NAME" -File -Recurse -Include *.ps1, *.ps1xml, *.psd1, *.psm1, *.pssc, *.psrc, *.cdxml, *.dll
+        try {
+            foreach ($file in $files) {
+                azuresigntool sign `
+                    -kvu ${{ vars.CODESIGNING_KEYVAULTURI }} `
+                    -kvi ${{ vars.TENANTINTEGRATION_CLIENTID }} `
+                    -kvt ${{ vars.TENANTINTEGRATION_TENANTID }} `
+                    -kvs ${{ secrets.TENANTINTEGRATION_CLIENTSECRET }} `
+                    -kvc ${{ vars.CODESIGNING_CERTNAME }} `
+                    -tr 'http://timestamp.digicert.com' `
+                    -v "$($file.FullName)" 
+            }
+        }
+        catch {
+            Write-Host "Error: $($_.Exception)"
+            throw
+        }
+        Write-Host "Signed files summary:"
+        Get-AuthenticodeSignature -FilePath $files
+
 
