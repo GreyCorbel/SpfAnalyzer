@@ -12,7 +12,7 @@
 RootModule = '.\SpfAnalyzer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.3'
+ModuleVersion = '0.0.4'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -98,11 +98,10 @@ PrivateData = @{
         Tags = @('Spf', 'Analyzer', 'Dns')
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://raw.githubusercontent.com/GreyCorbel/SpfAnalyzer/master/LICENSE'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
-
+         ProjectUri = 'https://github.com/GreyCorbel/SpfAnalyzer'
         # A URL to an icon representing this module.
         # IconUri = ''
 
