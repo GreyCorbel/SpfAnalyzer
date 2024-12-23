@@ -58,5 +58,24 @@ jobs:
         }
         Write-Host "Signed files summary:"
         Get-AuthenticodeSignature -FilePath $files
-
+    - name: Publish
+      #Publish to PS Gallery
+      shell: pwsh
+      if: ${{ github.event_name != 'workflow_dispatch' }}
+      env:
+        SECRET: ${{ secrets.GC_PSGALLERY_APIKEY }}
+      run: |
+        write-host "Publishing from: $env:GITHUB_WORKSPACE\Module\$env:MODULE_NAME"
+        try
+        {
+          $env:PSModulePath = "$env:PSModulePath;$env:GITHUB_WORKSPACE\Module"
+          "PSModulePath: $env:PSModulePath"
+          Publish-Module -Path "$env:GITHUB_WORKSPACE\Module\$env:MODULE_NAME" -NuGetApiKey "$env:SECRET"
+        }
+        catch
+        {
+          Write-Host "Error: $($_.Exception)"
+          throw
+        }
+  
 

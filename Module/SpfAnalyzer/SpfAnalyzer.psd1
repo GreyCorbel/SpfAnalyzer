@@ -12,7 +12,7 @@
 RootModule = '.\SpfAnalyzer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.1'
+ModuleVersion = '0.0.2'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -69,7 +69,7 @@ Description = 'Module provides functions for SPF record analysis.'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('Get-SpfRecord')
+FunctionsToExport = @('Get-SpfRecord', 'Get-SpfRecordIpAddress', 'Get-SpfRecordIpNetwork')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

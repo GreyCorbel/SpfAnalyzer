@@ -15,4 +15,36 @@ function Get-SPFRecord
     [DnsApi.Domain]::GetSpfRecord($Domain)
 }
 
+function Get-SpfRecordIpNetwork
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [DnsApi.SpfRecord]$SpfRecord
+    )
+
+    process
+    {
+        Write-Verbose "Processing $spfRecord"
+        $SpfRecord.Entries | Where-Object { $_ -is [System.Net.IPNetwork] }
+    }
+}
+
+function Get-SpfRecordIpAddress
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [DnsApi.SpfRecord]$SpfRecord
+    )
+
+    process
+    {
+        Write-Verbose "Processing $spfRecord"
+        $SpfRecord.Entries | Where-Object { $_ -is [System.Net.IPAddress] }
+    }
+}
+
 Init
