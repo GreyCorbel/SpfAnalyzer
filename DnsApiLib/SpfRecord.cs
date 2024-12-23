@@ -26,7 +26,7 @@ namespace DnsApi
             return $"Source: {Source} Record: {_rawRecord}";
         }
     }
-    public class SpfEntryBase
+    public abstract class SpfEntryBase
     {
         public string? Value { get; set; }
 
