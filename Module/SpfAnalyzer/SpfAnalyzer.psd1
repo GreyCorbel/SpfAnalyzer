@@ -12,7 +12,7 @@
 RootModule = '.\SpfAnalyzer.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.6'
+ModuleVersion = '0.0.7'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -33,7 +33,7 @@ Copyright = '(c) Jiri Formacek. All rights reserved.'
 Description = 'Module provides functions for SPF record analysis.'
 
 # Minimum version of the PowerShell engine required by this module
-PowerShellVersion = '7.0'
+PowerShellVersion = '7.2'
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''
@@ -54,7 +54,7 @@ PowerShellVersion = '7.0'
 # RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
-# RequiredAssemblies = @()
+RequiredAssemblies = @('lib/net8.0/DnsApiLib.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -63,7 +63,7 @@ PowerShellVersion = '7.0'
 # TypesToProcess = @()
 
 # Format files (.ps1xml) to be loaded when importing this module
-# FormatsToProcess = @()
+FormatsToProcess = @( '.\SpfAnalyzer.format.ps1xml' )
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()
@@ -95,7 +95,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @('Spf', 'Analyzer', 'Dns')
+        Tags = @('Spf', 'Analyzer', 'Dns', 'DMarc', 'EmailSecurity')
 
         # A URL to the license for this module.
         LicenseUri = 'https://raw.githubusercontent.com/GreyCorbel/SpfAnalyzer/master/LICENSE'

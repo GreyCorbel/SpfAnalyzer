@@ -1,6 +1,9 @@
 function Init
 {
-    Add-Type -Path (Join-Path $PSScriptRoot 'lib' 'net8.0' 'DnsApiLib.dll')
+    if(-not $IsWindows)
+    {
+        throw "This module is only supported on Windows OS, because of native platform dependencies"
+    }
 }
 
 function Get-SPFRecord
