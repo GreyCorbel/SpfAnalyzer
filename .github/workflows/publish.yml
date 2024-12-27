@@ -28,10 +28,10 @@ jobs:
         dotnet-version: 8.0.x
     
     - name: Restore dependencies
-      run:  dotnet restore "$env:GITHUB_WORKSPACE\DnsApiLib"
+      run:  dotnet restore "$env:GITHUB_WORKSPACE/src/DnsApiLib"
 
     - name: Build
-      run:  dotnet build "$env:GITHUB_WORKSPACE\DnsApiLib" --no-restore
+      run:  dotnet build "$env:GITHUB_WORKSPACE/src/DnsApiLib" --no-restore
 
     - name: Install AzureSignTool
       run:  dotnet tool install --global AzureSignTool
