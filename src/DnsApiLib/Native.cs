@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace DnsApi
 {
@@ -54,7 +55,9 @@ namespace DnsApi
             DNS_TYPE_SOA = 0x0006,
             DNS_TYPE_MX = 0x000f,
             DNS_TYPE_SRV = 0x0021,
-            DNS_TYPE_TEXT = 0x0010
+            DNS_TYPE_TEXT = 0x0010,
+            DNS_TYPE_AAAA = 0x001c,
+
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -80,6 +83,11 @@ namespace DnsApi
         {
             public UInt32 ipAddressData;
         }
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct DNS_AAAA_DATA
+        {
+            public UInt128 ipAddressData;
+        }
         [StructLayout(LayoutKind.Sequential)]
         public struct PtrRecord
         {
@@ -92,6 +100,12 @@ namespace DnsApi
         {
             public DNSRecordHeader hdr;
             public DNS_A_DATA data;
+        }
+        [StructLayout(LayoutKind.Sequential)]
+        public struct AaaaRecord
+        {
+            public DNSRecordHeader hdr;
+            public DNS_AAAA_DATA data;
         }
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct DNS_SOA_DATA
@@ -145,6 +159,7 @@ namespace DnsApi
             public DNS_SRV_DATA srv;
         }
         #endregion
+
         #region NativeMethods
         [DllImport("dnsapi", EntryPoint = "DnsQuery_W", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         public static extern int DnsQuery(string name, QueryTypes recordType, QueryOptions options, [In, Out, Optional] IntPtr pExtra, ref IntPtr ppQueryResults, IntPtr pReserved = default);

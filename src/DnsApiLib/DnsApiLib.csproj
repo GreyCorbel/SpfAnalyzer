@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+	<PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <Target Name="CopyFiles" AfterTargets="CopyFilesToOutputDirectory">
@@ -16,7 +18,7 @@
 	</ItemGroup>
     <Copy 
       SourceFiles="@(BuildOutput)" 
-      DestinationFolder="$(ProjectDir)/../Module/SpfAnalyzer/lib/net8.0/" />
+      DestinationFolder="$(ProjectDir)/../../Module/SpfAnalyzer/lib/net8.0/" />
   </Target>
 
 </Project>

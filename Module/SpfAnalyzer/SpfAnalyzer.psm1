@@ -15,6 +15,22 @@ function Get-SPFRecord
     [DnsApi.Domain]::GetSpfRecord($Domain)
 }
 
+function Test-SpfRecord
+{
+    param
+    (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$RawRecord,
+        [Parameter(Mandatory)]
+        [string]$Domain
+    )
+
+    process
+    {
+        $spfRecord = [DnsApi.DOmain]::ParseSpfRecord($Domain, $RawRecord)
+        $spfRecord
+    }
+}
 function Get-SpfRecordIpNetwork
 {
     [CmdletBinding()]
@@ -27,7 +43,7 @@ function Get-SpfRecordIpNetwork
     process
     {
         Write-Verbose "Processing $spfRecord"
-        $SpfRecord.Entries | Where-Object { $_ -is [System.Net.IPNetwork] }
+        $SpfRecord.Entries | Where-Object { $_ -is [DnsApi.SpfIpNetwork] }
     }
 }
 
@@ -43,7 +59,7 @@ function Get-SpfRecordIpAddress
     process
     {
         Write-Verbose "Processing $spfRecord"
-        $SpfRecord.Entries | Where-Object { $_ -is [System.Net.IPAddress] }
+        $SpfRecord.Entries | Where-Object { $_ -is [DnsApi.SpfIpAddress] }
     }
 }
 
