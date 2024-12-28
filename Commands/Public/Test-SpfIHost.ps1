@@ -33,7 +33,7 @@ function Test-SpfHost
                     throw "Unsupported macro $macro after expansion of $( $_.Value )"
                 }
                 try {
-                    [Dns]::GetRecord($macro, [Microsoft.DnsClient.Commands.RecordType]::A)
+                    [Dns]::GetRecord($macro, [DnsClient.QueryType]::A)
                 }
                 catch {
                     #silently ignore not found expanded macro

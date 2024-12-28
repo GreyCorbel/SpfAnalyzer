@@ -124,7 +124,7 @@ class SpfRecord
                 }
                 $record.Entries += [SpfEntry]::new('mx', $part.Substring($start).Replace(':',''))
 
-                $mx = [Dns]::GetRecord($domainName, [Microsoft.DnsClient.Commands.RecordType]::MX)
+                $mx = [Dns]::GetRecord($domainName, [DnsClient.QueryType]::MX)
                 foreach($rec in $mx)
                 {
                     if($null -eq $rec) {continue}
@@ -178,7 +178,8 @@ class SpfRecord
     }
 
     static [void] ParseAMechanism([string]$domain, [string]$rawEntry, [ref]$record) {
-        $records = [Dns]::GetRecord($domain, [Microsoft.DnsClient.Commands.RecordType]::A_AAAA)
+        $records = [Dns]::GetRecord($domain, [DnsClient.QueryType]::A)
+        $records += [Dns]::GetRecord($domain, [DnsClient.QueryType]::AAAA)
         foreach($rec in $records)
         {
             if($null -eq $rec) {continue}
@@ -189,7 +190,8 @@ class SpfRecord
     }
 
     static [void] ParseAWithMaskMechanism([string]$domain, [int]$mask, [string]$rawEntry, [ref]$record) {
-        $records = [Dns]::GetRecord($domain, [Microsoft.DnsClient.Commands.RecordType]::A_AAAA)
+        $records = [Dns]::GetRecord($domain, [DnsClient.QueryType]::A)
+        $records += [Dns]::GetRecord($domain, [DnsClient.QueryType]::AAAA)
         foreach($rec in $records)
         {
             if($null -eq $rec) {continue}
