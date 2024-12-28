@@ -115,7 +115,7 @@ PrivateData = @{
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        # ExternalModuleDependencies = @()
+        ExternalModuleDependencies = @('DnsClient')
 
     } # End of PSData hashtable
 
