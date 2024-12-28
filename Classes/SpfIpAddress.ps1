@@ -16,7 +16,13 @@ class SpfIpAddress {
     }
 
     static [SpfIpAddress] Parse([string]$source, [string]$address) {
+        try {
             $ip = [System.Net.IPAddress]::Parse($address)
             return [SpfIpAddress]::new($source, $ip)
+        }
+        catch {
+            Write-Warning "Invalid IP address $address"
+            return $null
+        }            
     }
 }

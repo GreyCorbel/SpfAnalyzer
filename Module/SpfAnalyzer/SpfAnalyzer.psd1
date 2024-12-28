@@ -51,10 +51,10 @@ PowerShellVersion = '7.2'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('DnsClient')
+# RequiredModules = @('')
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = @('lib/net8.0/IpHelper.dll')
+RequiredAssemblies = @('lib/net8.0/IpHelper.dll', 'lib/net8.0/DnsClient.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -87,7 +87,7 @@ AliasesToExport = @()
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = @( '.\lib\net8.0\IpHelper.dll' )
+FileList = @( './lib\net8.0/IpHelper.dll','lib/net8.0/DnsClient.dll' )
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
@@ -109,13 +109,13 @@ PrivateData = @{
         # ReleaseNotes = ''
 
         # Prerelease string of this module
-        Prerelease = 'beta2'
+        Prerelease = 'beta3'
 
         # Flag to indicate whether the module requires explicit user acceptance for install/update/save
         # RequireLicenseAcceptance = $false
 
         # External dependent modules of this module
-        ExternalModuleDependencies = @('DnsClient')
+        # ExternalModuleDependencies = @('')
 
     } # End of PSData hashtable
 

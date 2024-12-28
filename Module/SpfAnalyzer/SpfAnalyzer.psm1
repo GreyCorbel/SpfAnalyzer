@@ -8,39 +8,45 @@ enum SpfAction {
 #endregion Enums
 #region Classes
 class Dns {
-    [string]$Name
+    hidden static [DnsClient.LookupClient]$client = [DnsClient.LookupClient]::new()
 
-    Dns([string]$name) {
-        $this.Name = $name
-    }
-
-    static [object[]] GetRecord([string]$Name, [Microsoft.DnsClient.Commands.RecordType]$recordType) {
+    static [object[]] GetRecord([string]$Name, [DnsClient.QueryType]$recordType) {
         $retVal = @()
         switch($recordType)
         {
-            {$_ -in ([Microsoft.DnsClient.Commands.RecordType]::A,[Microsoft.DnsClient.Commands.RecordType]::A_AAAA, [Microsoft.DnsClient.Commands.RecordType]::AAAA)} { 
-                $data = Resolve-DnsName -Name $Name -Type $_ | select-object -ExpandProperty IPAddress
-                $data | where-object{$_ -ne $null} | foreach-object {
-                    try {
-                        $retVal += [SpfIpAddress]::Parse($recordName, $_)
-                    }
-                    catch {
-                        Write-Warning "Failed to parse $_ as IP address"
-                    }
+            {$_ -in ([DnsClient.QueryType]::A, [DnsClient.QueryType]::AAAA)} { 
+                $data = [Dns]::Client.Query($Name, $_) `
+                | select-object -ExpandProperty Answers `
+                | where-object{$_.RecordType -eq $recordType} `
+                | select-object -ExpandProperty Address
+                $data | foreach-object {
+                    $retVal += [SpfIpAddress]::new($recordName, $_)
                 }
                 break;
             }
-            {$_ -eq [Microsoft.DnsClient.Commands.RecordType]::MX} {
-                $data = Resolve-DnsName -Name $Name -Type MX | select-object -ExpandProperty NameExchange
-                $data | where-object{$_ -ne $null} | foreach-object {
+            {$_ -eq [DnsClient.QueryType]::MX} {
+                $data = [Dns]::Client.Query($Name, $_) `
+                | select-object -ExpandProperty Answers `
+                | where-object{$_.RecordType -eq $recordType} `
+                | select-object -expand Exchange `
+                | select-object -expand Value
+                $data | foreach-object {
                     $retVal += $_
                 }
                 break;
             }
-            {$_ -eq [Microsoft.DnsClient.Commands.RecordType]::TXT} {
-                $data = Resolve-DnsName -Name $Name -Type TXT | select-object -ExpandProperty Strings
-                $data | where-object{$_ -ne $null} | foreach-object {
-                    $retVal += $_
+            {$_ -eq [DnsClient.QueryType]::TXT} {
+                [Dns]::Client.Query($Name, $_) `
+                | select-object -ExpandProperty Answers `
+                | where-object{$_.RecordType -eq $recordType} `
+                | foreach-object {
+                    #TXT records may be split into multiple strings
+                    if($_.Text.Count -gt 1) {
+                        $retVal += ($_.Text -join '')
+                    }
+                    else {
+                        $retVal += $_.Text
+                    }
                 }
                 break;
             }
@@ -53,8 +59,7 @@ class Dns {
 
     static [object[]] GetSpfRecord([string]$Name) {
         $retVal = @()
-        $data = Resolve-DnsName -Name $Name -Type TXT | select-object -ExpandProperty Strings
-        $data | where-object{$_ -ne $null} | foreach-object {
+        [Dns]::GetRecord($Name, [DnsClient.QueryType]::TXT) | foreach-object {
             if($_ -match "^v=spf1") {
                 $retVal += $_
             }
@@ -93,8 +98,14 @@ class SpfIpAddress {
     }
 
     static [SpfIpAddress] Parse([string]$source, [string]$address) {
+        try {
             $ip = [System.Net.IPAddress]::Parse($address)
             return [SpfIpAddress]::new($source, $ip)
+        }
+        catch {
+            Write-Warning "Invalid IP address $address"
+            return $null
+        }            
     }
 }
 class SpfIpNetwork {
