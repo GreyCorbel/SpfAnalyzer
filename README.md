@@ -44,7 +44,7 @@ Test-SpfRecord `
 | Test-SpfHost -IpAddress 104.44.112.128 
 ```
 
-# Features nad limitations
+# Features and limitations
 Module is cross-platform and relies on DnsClient.NET package.  
 Module provides additional heler commands that return list of IP addresses and IP subnets found in publshed policy.  
 IPv4 and IPv6 addresses are supported.  
