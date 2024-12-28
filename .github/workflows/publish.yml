@@ -69,12 +69,14 @@ jobs:
         }
         Write-Host "Signed files summary:"
         Get-AuthenticodeSignature -FilePath $files
+
     - name: Setup external packages
       shell: pwsh
       run: |
           $moduleName = $env:MODULE_NAME
           "Setting up packages"
           &"$env:GITHUB_WORKSPACE\Workflow\SetupPackages.ps1" -ModuleName $moduleName -RootPath "$env:GITHUB_WORKSPACE" -NugetPath $env:nuget
+
     - name: Publish
       #Publish to PS Gallery
       shell: pwsh
@@ -94,5 +96,3 @@ jobs:
           Write-Host "Error: $($_.Exception)"
           throw
         }
-  
-
