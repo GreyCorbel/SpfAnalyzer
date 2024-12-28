@@ -37,6 +37,8 @@ class SpfRecord
             elseif ($continueParsing -and ($part.StartsWith('ip4:') -or $part.StartsWith('ip6:')))
             {
                 $ip = $part.Substring(4)
+                $prefix = $part.Substring(0, 3)
+                $record.Entries += [SpfEntry]::new($prefix, $ip)
                 if($ip -match '/')
                 {
                     $record.Entries += [SpfIpNetwork]::Parse($source, $ip)
