@@ -28,10 +28,18 @@ jobs:
         dotnet-version: 8.0.x
     
     - name: Restore dependencies
-      run:  dotnet restore "$env:GITHUB_WORKSPACE/src/DnsApiLib"
+      run:  dotnet restore "$env:GITHUB_WORKSPACE/src/IpHelper"
 
-    - name: Build
-      run:  dotnet build "$env:GITHUB_WORKSPACE/src/DnsApiLib" --no-restore
+    - name: Build compiled code
+      run:  dotnet build "$env:GITHUB_WORKSPACE/src/IpHelper" --no-restore
+
+    - name: Build module
+      shell: pwsh
+      run: |
+        $moduleName = $env:MODULE_NAME
+        Copy-Item -Path "$env:GITHUB_WORKSPACE\LICENSE" -Destination "$env:GITHUB_WORKSPACE\Module\ExoHelper\LICENSE.txt" -Force
+        "Building module"
+        &"$env:GITHUB_WORKSPACE\Workflow\BuildModule.ps1" -RootPath "$env:GITHUB_WORKSPACE" -ModuleName $moduleName
 
     - name: Install AzureSignTool
       run:  dotnet tool install --global AzureSignTool

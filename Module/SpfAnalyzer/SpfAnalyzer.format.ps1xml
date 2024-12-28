@@ -4,7 +4,7 @@
         <View>
             <Name>SpfRecord</Name>
             <ViewSelectedBy>
-                <TypeName>DnsApi.SpfRecord</TypeName>
+                <TypeName>SpfRecord</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
@@ -14,7 +14,9 @@
                     <TableColumnHeader>
                         <Width>11</Width>
                     </TableColumnHeader>
-                    <TableColumnHeader></TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>30</Width>
+                    </TableColumnHeader>
                     <TableColumnHeader></TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -40,9 +42,19 @@
         <View>
             <Name>SpfIpNetwork</Name>
             <ViewSelectedBy>
-                <TypeName>DnsApi.SpfIpNetwork</TypeName>
+                <TypeName>SpfIpNetwork</TypeName>
             </ViewSelectedBy>
             <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                        <Width>30</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>25</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                </TableHeaders>
                 <TableRowEntries>
                     <TableRowEntry>
                         <TableColumnItems>
@@ -63,9 +75,16 @@
         <View>
             <Name>SpfIpAddress</Name>
             <ViewSelectedBy>
-                <TypeName>DnsApi.SpfIpAddress</TypeName>
+                <TypeName>SpfIpAddress</TypeName>
             </ViewSelectedBy>
             <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                        <Width>30</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                </TableHeaders>
                 <TableRowEntries>
                     <TableRowEntry>
                         <TableColumnItems>
@@ -73,7 +92,7 @@
                                 <PropertyName>Source</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>IPAddressToString</PropertyName>
+                                <PropertyName>Address</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
