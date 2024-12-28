@@ -68,12 +68,14 @@ class Dns {
     }
 }
 class SpfEntry {
+    [string]$Source
     [string]$Prefix
     [string]$Value
 
-    SpfEntry([string]$prefix, [string]$value) {
+    SpfEntry([string]$Source, [string]$prefix, [string]$value) {
         $this.Prefix = $prefix
         $this.Value = $value
+        $this.Source = $Source
     }
 
     [string] ToString() {
@@ -203,6 +205,8 @@ class SpfRecord
             elseif ($continueParsing -and ($part.StartsWith('ip4:') -or $part.StartsWith('ip6:')))
             {
                 $ip = $part.Substring(4)
+                $prefix = $part.Substring(0, 3)
+                $record.Entries += [SpfEntry]::new($source, $prefix, $ip)
                 if($ip -match '/')
                 {
                     $record.Entries += [SpfIpNetwork]::Parse($source, $ip)
@@ -215,7 +219,7 @@ class SpfRecord
             elseif($continueParsing -and $part.StartsWith('include:'))
             {
                 $domainName = $part.Substring(8)
-                $record.Entries += [SpfEntry]::new('include', $domainName)
+                $record.Entries += [SpfEntry]::new($source, 'include', $domainName)
                 $additionalRecords = [Dns]::GetSpfRecord($domainName)
                 foreach($additionalRecord in $additionalRecords)
                 {
@@ -227,11 +231,11 @@ class SpfRecord
                 $splits = $part.Split(':')
                 if($splits.Length -gt 1)
                 {
-                    $record.Entries += [SpfEntry]::new($splits[0], $splits[1])
+                    $record.Entries += [SpfEntry]::new($source, $splits[0], $splits[1])
                 }
                 else
                 {
-                    $record.Entries += [SpfEntry]::new($part, $null)
+                    $record.Entries += [SpfEntry]::new($source, $part, $null)
                 }
             }
             elseif($continueParsing -and ($part.StartsWith('a:') -or $part.StartsWith('a/') -or $part -eq 'a' -or $part.StartsWith('+a:') -or $part.StartsWith('+a/') -or $part -eq '+a'))
@@ -257,7 +261,7 @@ class SpfRecord
                     $start++
                 }
 
-                $record.Entries += [SpfEntry]::new('a', $part.Substring($start).Replace(':',''))
+                $record.Entries += [SpfEntry]::new($source, 'a', $part.Substring($start).Replace(':',''))
                 if($mask -eq -1)
                 {
                     [SpfRecord]::ParseAMechanism($domainName, $part, [ref]$record)
@@ -288,7 +292,7 @@ class SpfRecord
                 {
                     $start++
                 }
-                $record.Entries += [SpfEntry]::new('mx', $part.Substring($start).Replace(':',''))
+                $record.Entries += [SpfEntry]::new($source, 'mx', $part.Substring($start).Replace(':',''))
 
                 $mx = [Dns]::GetRecord($domainName, [DnsClient.QueryType]::MX)
                 foreach($rec in $mx)
@@ -329,14 +333,14 @@ class SpfRecord
             elseif($part.StartsWith('redirect='))
             {
                 $domainName = $part.Substring(9)
-                $record.Entries += [SpfEntry]::new('redirect', $domainName)
+                $record.Entries += [SpfEntry]::new($source, 'redirect', $domainName)
                 $additionalRecords = [Dns]::GetSpfRecord($domainName)
                 $retVal+=$additionalRecords
             }
             elseif($part.StartsWith('exp='))
             {
                 $domainName = $part.Substring(4)
-                $record.Entries += [SpfEntry]::new('exp', $domainName)
+                $record.Entries += [SpfEntry]::new($source, 'exp', $domainName)
             }
         }
         

@@ -6,9 +6,7 @@ function Get-SpfRecordEntries
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
         [SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
-        [string]$Domain,
-        [switch]$IncludeIpAddresses,
-        [switch]$IncludeIpNetworks
+        [string]$Domain
     )
 
     process
@@ -24,13 +22,5 @@ function Get-SpfRecordEntries
         }
         Write-Verbose "Processing $record"
         $record.Entries | Where-Object{$_ -is [SpfEntry]}
-        if($IncludeIpAddresses)
-        {
-            $record.Entries | Where-Object{$_ -is [SpfIpAddress]}
-        }
-        if($IncludeIpNetworks)
-        {
-            $record.Entries | Where-Object{$_ -is [SpfIpNetwork]}
-        }
     }    
 }
