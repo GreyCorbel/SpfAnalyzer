@@ -3,18 +3,29 @@ function Test-SpfHost
     [CmdletBinding()]
     param
     (
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
+        [SpfRecord]$SpfRecord,
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
         [Parameter(Mandatory)]
-        [string]$Address,
+        [string]$IpAddress,
         [Parameter()]
         [string]$SenderAddress
     )
 
     process
     {
-        $ip = [System.Net.IPAddress]::Parse($Address)
-        $spfRecords = Get-SPFRecord -Domain $Domain
+        $ip = [System.Net.IPAddress]::Parse($IpAddress)
+        if ($PSCmdlet.ParameterSetName -eq 'DomainName')
+        {
+            Write-Verbose "Processing $Domain"
+            [SpfRecord[]]$spfRecords = Get-SpfRecord -Domain $Domain `
+        }
+        else
+        {
+            $spfRecords = @($SpfRecord)
+        }
+        Write-Verbose "Processing $record"
         foreach($record in $spfRecords)
         {
             $record `

@@ -26,13 +26,20 @@ Output is parsed, and each entry shows in its `Source` field where it came from 
 ## Testing the IP address against published policy
 Command below tests IP address against policy published by domain and returns all mathing entries. During testing, macros specified in `exists` mechanism are expanded and queries performed.
 ```powershell
-Test-SpfHost -Domain microsoft.com -Address 104.44.112.224
+Test-SpfHost -Domain microsoft.com -IpAddress 104.44.112.224
 ```
 Command returns matching entries as below - when at least 1 entry is returned, then IP address is authorized for use of domain in email. Again, `Source` field in returned entries shows, which SPF mechanism authorized the IP address.
 ```
 Source                         BaseAddress               PrefixLength
 ------                         -----------               ------------
 _spf-ssg-a.msft.net            104.44.112.128            25
+```
+
+## Modelling and testing SPF record
+Module allows passing raw SPF record and parse it, and possibly test against IP addresses and Sender email to see if policy works as expected.
+```powershell
+Test-SpfRecord -RawRecord 'v=spf1 include:_spf-a.microsoft.com include:_spf-b.microsoft.com include:_spf-c.microsoft.com include:_spf-ssg-a.msft.net include:spf-a.hotmail.com include:_spf1-meo.microsoft.com -all' -Domain microsoft.com `
+| Test-SpfHost -Domain microsoft.com -Address 104.44.112.128
 ```
 
 # Features nad limitations
