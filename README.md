@@ -38,8 +38,10 @@ _spf-ssg-a.msft.net            104.44.112.128            25
 ## Modelling and testing SPF record
 Module allows passing raw SPF record and parse it, and possibly test against IP addresses and Sender email to see if policy works as expected.
 ```powershell
-Test-SpfRecord -RawRecord 'v=spf1 include:_spf-a.microsoft.com include:_spf-b.microsoft.com include:_spf-c.microsoft.com include:_spf-ssg-a.msft.net include:spf-a.hotmail.com include:_spf1-meo.microsoft.com -all' -Domain microsoft.com `
-| Test-SpfHost -Domain microsoft.com -Address 104.44.112.128
+Test-SpfRecord `
+    -RawRecord 'v=spf1 include:_spf-a.microsoft.com include:_spf-b.microsoft.com include:_spf-c.microsoft.com include:_spf-ssg-a.msft.net include:spf-a.hotmail.com include:_spf1-meo.microsoft.com -all' `
+    -Domain microsoft.com `
+| Test-SpfHost -IpAddress 104.44.112.128 
 ```
 
 # Features nad limitations

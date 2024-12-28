@@ -518,7 +518,7 @@ function Test-SpfHost
             $record.Entries `
             | Where-Object { $_.Prefix -eq 'exists' } `
             | ForEach-Object {
-                $macro =  Expand-SpfMacro -Macro $_.Value -Domain $Domain -IpAddress $ip -SenderAddress $SenderAddress
+                $macro =  Expand-SpfMacro -Macro $_.Value -Domain $spfRecords[0].Source -IpAddress $ip -SenderAddress $SenderAddress
                 if($macro -match '%{.' ) {
                     throw "Unsupported macro $macro after expansion of $( $_.Value )"
                 }
