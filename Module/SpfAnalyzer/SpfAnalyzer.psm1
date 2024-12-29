@@ -637,6 +637,27 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
                     #silently ignore not found expanded macro
                 }
             }
+            $record.Entries `
+            | Where-Object { $_.Prefix -eq 'include' } `
+            | Where-Object { $_.Value -match '%{.' } `
+            | ForEach-Object {
+                $macro =  Expand-SpfMacro -Macro $_.Value -Domain $spfRecords[0].Source -IpAddress $ip -SenderAddress $SenderAddress
+                if($macro -match '%{.' ) {
+                    throw "Unsupported macro $macro after expansion of $( $_.Value )"
+                }
+                try {
+                    $rawRecord = [Dns]::GetRecord($macro, [DnsClient.QueryType]::TXT)
+                    if($null -ne $rawRecord)
+                    {
+                        $additionalRecord = [SpfRecord]::Parse($_.Source, $rawRecord)
+                        $additionalRecord `
+                        | Test-SpfHost -IpAddress $IpAddress -SenderAddress $SenderAddress
+                    }
+                }
+                catch {
+                    #silently ignore not found expanded macro
+                }
+            }
         }
     }
 }
