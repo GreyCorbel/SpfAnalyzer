@@ -335,7 +335,10 @@ class SpfRecord
                 $domainName = $part.Substring(9)
                 $record.Entries += [SpfEntry]::new($source, 'redirect', $domainName)
                 $additionalRecords = [Dns]::GetSpfRecord($domainName)
-                $retVal+=$additionalRecords
+                foreach($additionalRecord in $additionalRecords)
+                {
+                    $retVal += [SpfRecord]::Parse($domainName, $additionalRecord)
+                }
             }
             elseif($part.StartsWith('exp='))
             {
