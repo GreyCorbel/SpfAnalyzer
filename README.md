@@ -50,4 +50,5 @@ Module provides additional heler commands that return list of IP addresses and I
 IPv4 and IPv6 addresses are supported.  
 Only Powershell Core edition is supported.  
 Macro expansion in `exists` mechanism does not yet cover complete specification in RFC 7208 - looking for collaborators to enhance parsing.
+Macros in `include` method aren't currently expanded and such record is not tried to be parsed
 
