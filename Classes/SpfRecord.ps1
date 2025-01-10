@@ -8,7 +8,7 @@ class SpfRecord
     [object[]] $Entries
 
     SpfRecord([string]$source, [string]$rawRecord) {
-        $this.rawRecord = $rawRecord
+        $this.RawRecord = $rawRecord
         $this.Version = 'spf1'
         $this.FinalAction = [SpfAction]::Neutral
         $this.Source = $source
