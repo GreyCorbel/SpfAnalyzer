@@ -220,10 +220,17 @@ class SpfRecord
             {
                 $domainName = $part.Substring(8)
                 $record.Entries += [SpfEntry]::new($source, 'include', $domainName)
-                $additionalRecords = [Dns]::GetSpfRecord($domainName)
-                foreach($additionalRecord in $additionalRecords)
+                if($retval.source -notcontains $domainName)
                 {
-                    $retVal += [SpfRecord]::Parse($domainName, $additionalRecord)
+                    $additionalRecords = [Dns]::GetSpfRecord($domainName)
+                    foreach($additionalRecord in $additionalRecords)
+                    {
+                        $retVal += [SpfRecord]::Parse($domainName, $additionalRecord)
+                    }
+                }
+                else
+                {
+                    Write-Warning "Cyclic reference: $domainName"
                 }
             }
             elseif($continueParsing -and $part.StartsWith('exists:') -or $part.StartsWith('ptr:') -or $part -eq 'ptr')
