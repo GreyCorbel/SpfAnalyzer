@@ -57,4 +57,17 @@ class Dns {
         }
         if($retVal.Count -eq 0) {return $null} else {return $retVal}
     }
+    static [object[]] GetDkimRecord([string]$Name) {
+        $retVal = @()
+        [Dns]::GetRecord($Name, [DnsClient.QueryType]::TXT) | foreach-object {
+            #if($_ -match "^v=DKIM1") {
+            #v= is not mandatory, so we cannot check for DKIM1 in the record
+            $retVal += $_
+            #}
+        }
+        if($retVal.Count -eq 0) {
+            return $null
+        } else {return $retVal}
+    }
+
 }

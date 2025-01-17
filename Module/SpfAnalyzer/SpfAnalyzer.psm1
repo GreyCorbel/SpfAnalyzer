@@ -7,6 +7,136 @@ enum SpfAction {
 }
 #endregion Enums
 #region Classes
+class DkimEntry {
+    [string]$Source
+    [string]$Prefix
+    [string]$Value
+
+    DkimEntry([string]$Source, [string]$prefix, [string]$value) {
+        $this.Prefix = $prefix
+        $this.Value = $value
+        $this.Source = $Source
+    }
+
+    [string] ToString() {
+        return "$($this.Prefix) $($this.Value)"
+    }
+}
+class DkimKey {
+    [string]$SignatureAlgorithm
+    [int]$KeySize
+
+
+    DkimKey([string]$algorithm, [int]$keySize) {
+        $this.SignatureAlgorithm = $algorithm
+        $this.KeySize = $keySize
+    }
+
+    [string] ToString() {
+        return "Algo: $($this.SignatureAlgorithm) KeySize: $($this.KeySize)"
+    }
+
+    static [DkimKey] Parse([string]$algo, [string]$encodedKey) {
+        $retVal = [DkimKey]::new($algo, 0)
+        try {
+            switch($algo) {
+                'rsa' {
+                    $rsa = [System.Security.Cryptography.RSA]::Create()
+                    $rsa.ImportSubjectPublicKeyInfo([Convert]::FromBase64String($encodedKey), [ref]$null)
+                    $retVal.keySize = $rsa.KeySize
+                    $retVal.SignatureAlgorithm = $rsa.SignatureAlgorithm
+                    break;
+                }
+                'ed25519' {
+                    #we want to parse to detect invalid data in DNS records
+                    $publicKey = [Convert]::FromBase64String($encodedKey)
+                    $retVal.KeySize = $publicKey.Length * 8
+                    $retVal.SignatureAlgorithm = 'Ed25519'
+                    break;
+                }
+                default {
+                    Write-Warning "Unknown algo: $algo"
+                    $retVal.KeySize = -1
+                }
+            }
+        }
+        catch {
+            Write-Warning "Invalid key: $encodedKey`nError: $($_.Exception.Message)"
+            $retVal.KeySize = -2
+        }
+        return $retVal
+    }
+}
+class DkimRecord {
+    hidden [string] $rawRecord
+    [string] $Version
+    [string]$Domain
+    [string] $Source
+    [DkimKey] $PublicKey
+    [object[]] $Entries
+
+
+    DkimRecord([string]$domain, [string]$source, [string]$rawRecord) {
+        $this.RawRecord = $rawRecord
+        $this.Version = 'DKIM1'
+        $this.Domain = $domain
+        $this.Source = $source
+        $this.Entries = @()
+
+    }
+
+    [string] ToString() {
+        return "Source: $($this.Source) Record: $($this.rawRecord)"
+    }
+
+    static [DkimRecord[]] Parse([string]$domain, [string]$Source, [string]$rawRecord)
+    {
+        [string[]]$tags = @('v=', 'h=', 'k=', 'n=', 'p=', 's=','t=', 'o=')
+
+        $retVal = @()
+        $record = [DkimRecord]::new($Domain, $source, $rawRecord)
+        $retVal += $record
+
+        $parts = $rawRecord.Split(';')
+        $algo = 'rsa'
+        $key = ''
+
+        foreach($part in $parts)
+        {
+            $token = $part.Trim()
+            if($token.Length -eq 0) {continue}
+
+            $tag = $token.Substring(0,2)
+            if($tag -eq 'v=')
+            {
+                #split is there because some DKIM entries are filled in by SPF data
+                $record.Version = $token.Substring(2).Split(' ')[0]
+            }
+            elseif($tag -in $tags)
+            {
+                $record.Entries += [DkimEntry]::new($source, $token.Substring(0,1), $token.Substring(2))
+                if($tag -eq 'k=')
+                {
+                    $algo = $token.Substring(2)
+                }
+                elseif($tag -eq 'p=')
+                {
+                    $key = $token.Substring(2)
+                }
+            }
+            else {
+                #possible key without tag? e.g. salesforce20161220._domainkey.dhl.com.
+                $record.Entries += [DkimEntry]::new($source, 'p?', $token)
+                #$key = $token
+            }
+        }
+        if(-not [string]::IsNullOrEmpty($key))
+        {
+            $record.PublicKey =  [DkimKey]::Parse($algo, $key)
+        }
+        return $record
+    }
+}
 class Dns {
     hidden static [DnsClient.LookupClient]$client = [DnsClient.LookupClient]::new()
 
@@ -66,6 +196,19 @@ class Dns {
         }
         if($retVal.Count -eq 0) {return $null} else {return $retVal}
     }
+    static [object[]] GetDkimRecord([string]$Name) {
+        $retVal = @()
+        [Dns]::GetRecord($Name, [DnsClient.QueryType]::TXT) | foreach-object {
+            #if($_ -match "^v=DKIM1") {
+            #v= is not mandatory, so we cannot check for DKIM1 in the record
+            $retVal += $_
+            #}
+        }
+        if($retVal.Count -eq 0) {
+            return $null
+        } else {return $retVal}
+    }
+
 }
 class SpfEntry {
     [string]$Source
@@ -176,7 +319,7 @@ class SpfRecord
     [object[]] $Entries
 
     SpfRecord([string]$source, [string]$rawRecord) {
-        $this.rawRecord = $rawRecord
+        $this.RawRecord = $rawRecord
         $this.Version = 'spf1'
         $this.FinalAction = [SpfAction]::Neutral
         $this.Source = $source
@@ -383,6 +526,45 @@ class SpfRecord
 }
 #endregion Classes
 #region Public commands
+function Get-DkimRecord
+{
+<#
+.SYNOPSIS
+    Retrieves and parses given DKIM record
+
+.DESCRIPTION
+    This command takes given DNS record and tries to interpret it as DKIM record.
+.OUTPUTS
+    DkimRecord[]
+
+.EXAMPLE
+Get-DkimRecord -Domain 'microsoft.com'
+
+Description
+-----------
+Retrieves and parses DKIM record for microsoft.com domain
+
+.LINK
+More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7208
+#>
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$Domain,
+        [string]$Record
+    )
+
+    process
+    {
+        $dnsName = $record + '.' + $domain
+        $dkimRecords = [Dns]::GetDkimRecord($dnsName)
+        foreach($record in $dkimRecords)
+        {
+            [DkimRecord]::Parse($domain, $dnsName, $record)
+        }
+    }    
+}
 function Get-SPFRecord
 {
 <#
