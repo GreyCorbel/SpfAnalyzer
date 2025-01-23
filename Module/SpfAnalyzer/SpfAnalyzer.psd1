@@ -12,7 +12,7 @@
 RootModule = '.\SpfAnalyzer.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.4'
+ModuleVersion = '1.0.5'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -54,7 +54,7 @@ PowerShellVersion = '7.2'
 # RequiredModules = @('')
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = @('lib/net8.0/IpHelper.dll', 'lib/net8.0/DnsClient.dll')
+RequiredAssemblies = @('.\lib\net8.0/IpHelper.dll', '.\lib\net8.0/DnsClient.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
