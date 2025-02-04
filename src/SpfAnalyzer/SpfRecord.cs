@@ -100,7 +100,8 @@ namespace SpfAnalyzer
                 {
                     var includeDomain = part.Substring(8);
                     record._entries.Add(new SpfEntry(domain, source, "include", includeDomain));
-                    if (retVal.Where(x => string.Equals(x.Source, source, StringComparison.OrdinalIgnoreCase)).Count() == 1)
+                    //prevent infinite recursion
+                    if (retVal.Where(x => string.Equals(x.Source, includeDomain, StringComparison.OrdinalIgnoreCase)).Count() == 0)
                     {
                         var additionalRecords = Dns.GetSpfRecord(includeDomain);
                         foreach (var additionalRecord in additionalRecords)
