@@ -27,19 +27,8 @@ jobs:
       with:
         dotnet-version: 8.0.x
     
-    - name: Restore dependencies - IpHelper
-      run:  dotnet restore "$env:GITHUB_WORKSPACE/src/IpHelper"
-
-    - name: Restore dependencies - SpfAnalyzer
+    - name: Restore dependencies
       run:  dotnet restore "$env:GITHUB_WORKSPACE/src/SpfAnalyzer"
-
-    - name: test
-      shell: pwsh
-      run: |
-        dir $env:userprofile\.nuget\packages\DnsClient\*
-
-    - name: Build - IpHelper
-      run:  dotnet build "$env:GITHUB_WORKSPACE/src/IpHelper" --no-restore
 
     - name: Build - SpfAnalyzer
       run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore

@@ -58,5 +58,16 @@ namespace SpfAnalyzer
             }
             return retVal.ToArray();
         }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append("v=" + Version);
+            foreach (var entry in _entries)
+            {
+                sb.Append(";" + entry.ToString());
+            }
+            return sb.ToString();
+        }
     }
 }
