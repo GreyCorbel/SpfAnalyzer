@@ -28,6 +28,6 @@ param
 
     process
     {
-        [SpfRecord]::Parse($Domain, $RawRecord)
+        [SpfAnalyzer.SpfRecord]::Parse($Domain, $Domain, $RawRecord, 0)
     }
 }

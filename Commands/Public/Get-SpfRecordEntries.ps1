@@ -48,6 +48,6 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
             $record = $SpfRecord
         }
         Write-Verbose "Processing $record"
-        $record.Entries | Where-Object{$_ -is [SpfEntry]}
+        $record.Entries
     }    
 }

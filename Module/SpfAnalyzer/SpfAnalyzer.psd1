@@ -12,7 +12,7 @@
 RootModule = '.\SpfAnalyzer.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.5'
+ModuleVersion = '2.0.0'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -54,7 +54,7 @@ PowerShellVersion = '7.2'
 # RequiredModules = @('')
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = @('.\lib\net8.0/IpHelper.dll', '.\lib\net8.0/DnsClient.dll')
+RequiredAssemblies = @('.\lib\net8.0/IpHelper.dll', '.\lib\net8.0/DnsClient.dll', '.\lib\net8.0/SpfAnalyzer.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -69,7 +69,7 @@ FormatsToProcess = @( '.\SpfAnalyzer.format.ps1xml' )
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = @('Get-SpfRecord', 'Test-SpfRecord', 'Test-SpfHost', 'Get-SpfRecordIpAddress', 'Get-SpfRecordIpNetwork','Get-SpfRecordEntries', 'Get-DKIMRecord')
+FunctionsToExport = @('Get-SpfRecord', 'Test-SpfRecord', 'Test-SpfHost', 'Get-SpfRecordIpAddress', 'Get-SpfRecordIpNetwork','Get-SpfRecordEntries', 'Get-DKIMRecord', 'Get-DmarcRecord')
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -87,7 +87,7 @@ AliasesToExport = @()
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = @( './lib\net8.0/IpHelper.dll','lib/net8.0/DnsClient.dll' )
+FileList = @( '/lib/net8.0/IpHelper.dll','lib/net8.0/DnsClient.dll','lib/net8.0/SpfAnalyzer.dll' )
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
@@ -109,7 +109,7 @@ PrivateData = @{
         # ReleaseNotes = ''
 
         # Prerelease string of this module
-        # Prerelease = 'beta9'
+        Prerelease = 'beta1'
 
         # Flag to indicate whether the module requires explicit user acceptance for install/update/save
         # RequireLicenseAcceptance = $false

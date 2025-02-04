@@ -27,7 +27,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
-        [SpfRecord]$SpfRecord,
+        [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
         [Parameter(Mandatory)]
@@ -42,7 +42,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            [SpfRecord[]]$spfRecords = Get-SpfRecord -Domain $Domain `
+            $spfRecords = Get-SpfRecord -Domain $Domain `
         }
         else
         {
@@ -85,7 +85,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
                     $rawRecord = [Dns]::GetRecord($macro, [DnsClient.QueryType]::TXT)
                     if($null -ne $rawRecord)
                     {
-                        $additionalRecord = [SpfRecord]::Parse($_.Source, $rawRecord)
+                        $additionalRecord = [SpfAnalyzer.SpfRecord]::Parse($_.Source, $rawRecord)
                         $additionalRecord `
                         | Test-SpfHost -IpAddress $IpAddress -SenderAddress $SenderAddress
                     }

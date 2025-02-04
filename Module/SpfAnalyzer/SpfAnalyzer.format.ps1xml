@@ -4,7 +4,7 @@
         <View>
             <Name>SpfRecord</Name>
             <ViewSelectedBy>
-                <TypeName>SpfRecord</TypeName>
+                <TypeName>SpfAnalyzer.SpfRecord</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
@@ -42,7 +42,7 @@
         <View>
             <Name>DkimRecord</Name>
             <ViewSelectedBy>
-                <TypeName>DkimRecord</TypeName>
+                <TypeName>SpfAnalyzer.DkimRecord</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
@@ -82,12 +82,12 @@
         <View>
             <Name>SpfIpNetwork</Name>
             <ViewSelectedBy>
-                <TypeName>SpfIpNetwork</TypeName>
+                <TypeName>SpfAnalyzer.SpfIpNetwork</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
                     <TableColumnHeader>
-                        <Width>30</Width>
+                        <Width>50</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
                         <Width>25</Width>
@@ -115,12 +115,12 @@
         <View>
             <Name>SpfIpAddress</Name>
             <ViewSelectedBy>
-                <TypeName>SpfIpAddress</TypeName>
+                <TypeName>SpfAnalyzer.SpfIpAddress</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
                     <TableColumnHeader>
-                        <Width>30</Width>
+                        <Width>50</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
                     </TableColumnHeader>

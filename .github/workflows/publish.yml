@@ -30,11 +30,17 @@ jobs:
       with:
         dotnet-version: 8.0.x
     
-    - name: Restore dependencies
+    - name: Restore dependencies - IpHelper
       run:  dotnet restore "$env:GITHUB_WORKSPACE/src/IpHelper"
 
-    - name: Build compiled code
+    - name: Build - IpHelper
       run:  dotnet build "$env:GITHUB_WORKSPACE/src/IpHelper" --no-restore
+
+    - name: Restore dependencies - SpfAnalyzer
+      run:  dotnet restore "$env:GITHUB_WORKSPACE/src/SpfAnalyzer"
+
+    - name: Build - SpfAnalyzer
+      run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore
 
     - name: Build module
       shell: pwsh

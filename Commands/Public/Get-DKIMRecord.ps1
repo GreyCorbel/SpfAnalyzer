@@ -10,11 +10,11 @@ function Get-DkimRecord
     DkimRecord[]
 
 .EXAMPLE
-Get-DkimRecord -Domain 'microsoft.com'
+Get-DkimRecord -Domain 'microsoft.com' -Record 'selector1._domainkey'
 
 Description
 -----------
-Retrieves and parses DKIM record for microsoft.com domain
+Retrieves and parses DKIM record selector1._domainKey for microsoft.com domain
 
 .LINK
 More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7208
@@ -24,16 +24,17 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     (
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Domain,
+        [Parameter(Mandatory)]
         [string]$Record
     )
 
     process
     {
         $dnsName = $record + '.' + $domain
-        $dkimRecords = [Dns]::GetDkimRecord($dnsName)
+        $dkimRecords = [SpfAnalyzer.Dns]::GetDkimRecord($dnsName)
         foreach($record in $dkimRecords)
         {
-            [DkimRecord]::Parse($domain, $dnsName, $record)
+            [SpfAnalyzer.DkimRecord]::Parse($domain, $dnsName, $record)
         }
     }    
 }

@@ -1,530 +1,3 @@
-#region Enums
-enum SpfAction {
-    Pass
-    Fail
-    SoftFail
-    Neutral
-}
-#endregion Enums
-#region Classes
-class DkimEntry {
-    [string]$Source
-    [string]$Prefix
-    [string]$Value
-
-    DkimEntry([string]$Source, [string]$prefix, [string]$value) {
-        $this.Prefix = $prefix
-        $this.Value = $value
-        $this.Source = $Source
-    }
-
-    [string] ToString() {
-        return "$($this.Prefix) $($this.Value)"
-    }
-}
-class DkimKey {
-    [string]$SignatureAlgorithm
-    [int]$KeySize
-
-
-    DkimKey([string]$algorithm, [int]$keySize) {
-        $this.SignatureAlgorithm = $algorithm
-        $this.KeySize = $keySize
-    }
-
-    [string] ToString() {
-        return "Algo: $($this.SignatureAlgorithm) KeySize: $($this.KeySize)"
-    }
-
-    static [DkimKey] Parse([string]$algo, [string]$encodedKey) {
-        $retVal = [DkimKey]::new($algo, 0)
-        try {
-            switch($algo) {
-                'rsa' {
-                    $rsa = [System.Security.Cryptography.RSA]::Create()
-                    $rsa.ImportSubjectPublicKeyInfo([Convert]::FromBase64String($encodedKey), [ref]$null)
-                    $retVal.keySize = $rsa.KeySize
-                    $retVal.SignatureAlgorithm = $rsa.SignatureAlgorithm
-                    break;
-                }
-                'ed25519' {
-                    #we want to parse to detect invalid data in DNS records
-                    $publicKey = [Convert]::FromBase64String($encodedKey)
-                    $retVal.KeySize = $publicKey.Length * 8
-                    $retVal.SignatureAlgorithm = 'Ed25519'
-                    break;
-                }
-                default {
-                    Write-Warning "Unknown algo: $algo"
-                    $retVal.KeySize = -1
-                }
-            }
-        }
-        catch {
-            Write-Warning "Invalid key: $encodedKey`nError: $($_.Exception.Message)"
-            $retVal.KeySize = -2
-        }
-        return $retVal
-    }
-}
-class DkimRecord {
-    hidden [string] $rawRecord
-    [string] $Version
-    [string]$Domain
-    [string] $Source
-    [DkimKey] $PublicKey
-    [object[]] $Entries
-
-
-    DkimRecord([string]$domain, [string]$source, [string]$rawRecord) {
-        $this.RawRecord = $rawRecord
-        $this.Version = 'DKIM1'
-        $this.Domain = $domain
-        $this.Source = $source
-        $this.Entries = @()
-
-    }
-
-    [string] ToString() {
-        return "Source: $($this.Source) Record: $($this.rawRecord)"
-    }
-
-    static [DkimRecord[]] Parse([string]$domain, [string]$Source, [string]$rawRecord)
-    {
-        [string[]]$tags = @('v=', 'h=', 'k=', 'n=', 'p=', 's=','t=', 'o=')
-
-        $retVal = @()
-        $record = [DkimRecord]::new($Domain, $source, $rawRecord)
-        $retVal += $record
-
-        $parts = $rawRecord.Split(';')
-        $algo = 'rsa'
-        $key = ''
-
-        foreach($part in $parts)
-        {
-            $token = $part.Trim()
-            if($token.Length -eq 0) {continue}
-
-            $tag = $token.Substring(0,2)
-            if($tag -eq 'v=')
-            {
-                #split is there because some DKIM entries are filled in by SPF data
-                $record.Version = $token.Substring(2).Split(' ')[0]
-            }
-            elseif($tag -in $tags)
-            {
-                $record.Entries += [DkimEntry]::new($source, $token.Substring(0,1), $token.Substring(2))
-                if($tag -eq 'k=')
-                {
-                    $algo = $token.Substring(2)
-                }
-                elseif($tag -eq 'p=')
-                {
-                    $key = $token.Substring(2)
-                }
-            }
-            else {
-                #possible key without tag? e.g. salesforce20161220._domainkey.dhl.com.
-                $record.Entries += [DkimEntry]::new($source, 'p?', $token)
-                #$key = $token
-            }
-        }
-        if(-not [string]::IsNullOrEmpty($key))
-        {
-            $record.PublicKey =  [DkimKey]::Parse($algo, $key)
-        }
-        return $record
-    }
-}
-class Dns {
-    hidden static [DnsClient.LookupClient]$client = [DnsClient.LookupClient]::new()
-
-    static [object[]] GetRecord([string]$Name, [DnsClient.QueryType]$recordType) {
-        $retVal = @()
-        switch($recordType)
-        {
-            {$_ -in ([DnsClient.QueryType]::A, [DnsClient.QueryType]::AAAA)} { 
-                $data = [Dns]::Client.Query($Name, $_) `
-                | select-object -ExpandProperty Answers `
-                | where-object{$_.RecordType -eq $recordType} `
-                | select-object -ExpandProperty Address
-                $data | foreach-object {
-                    $retVal += [SpfIpAddress]::new($recordName, $_)
-                }
-                break;
-            }
-            {$_ -eq [DnsClient.QueryType]::MX} {
-                $data = [Dns]::Client.Query($Name, $_) `
-                | select-object -ExpandProperty Answers `
-                | where-object{$_.RecordType -eq $recordType} `
-                | select-object -expand Exchange `
-                | select-object -expand Value
-                $data | foreach-object {
-                    $retVal += $_
-                }
-                break;
-            }
-            {$_ -eq [DnsClient.QueryType]::TXT} {
-                [Dns]::Client.Query($Name, $_) `
-                | select-object -ExpandProperty Answers `
-                | where-object{$_.RecordType -eq $recordType} `
-                | foreach-object {
-                    #TXT records may be split into multiple strings
-                    if($_.Text.Count -gt 1) {
-                        $retVal += ($_.Text -join '')
-                    }
-                    else {
-                        $retVal += $_.Text
-                    }
-                }
-                break;
-            }
-            default {
-                throw "Unsupported record type $recordType"
-            }
-        }
-        if($retVal.Count -eq 0) {return $null} else {return $retVal}
-    }
-
-    static [object[]] GetSpfRecord([string]$Name) {
-        $retVal = @()
-        [Dns]::GetRecord($Name, [DnsClient.QueryType]::TXT) | foreach-object {
-            if($_ -match "^v=spf1") {
-                $retVal += $_
-            }
-        }
-        if($retVal.Count -eq 0) {return $null} else {return $retVal}
-    }
-    static [object[]] GetDkimRecord([string]$Name) {
-        $retVal = @()
-        [Dns]::GetRecord($Name, [DnsClient.QueryType]::TXT) | foreach-object {
-            #if($_ -match "^v=DKIM1") {
-            #v= is not mandatory, so we cannot check for DKIM1 in the record
-            $retVal += $_
-            #}
-        }
-        if($retVal.Count -eq 0) {
-            return $null
-        } else {return $retVal}
-    }
-
-}
-class SpfEntry {
-    [string]$Source
-    [string]$Prefix
-    [string]$Value
-
-    SpfEntry([string]$Source, [string]$prefix, [string]$value) {
-        $this.Prefix = $prefix
-        $this.Value = $value
-        $this.Source = $Source
-    }
-
-    [string] ToString() {
-        return "$($this.Prefix) $($this.Value)"
-    }
-}
-class SpfIpAddress {
-    [string]$Source
-    [System.Net.IPAddress]$Address
-
-    SpfIpAddress([string]$source, [System.Net.IPAddress]$address) {
-        $this.Source = $source
-        $this.Address = $address
-    }
-
-    [string] ToString() {
-        return $this.Address.ToString()
-    }
-
-    [System.Net.IPNetwork] ToNetwork([int]$prefixLength) {
-        return  [SpfIpNetwork]::new($this.source, [IpHelper.IPAddressExtensions]::Mask($this.address,$prefixLength,$true))
-    }
-
-    static [SpfIpAddress] Parse([string]$source, [string]$address) {
-        try {
-            $ip = [System.Net.IPAddress]::Parse($address)
-            return [SpfIpAddress]::new($source, $ip)
-        }
-        catch {
-            Write-Warning "Invalid IP address $address"
-            return $null
-        }            
-    }
-}
-class SpfIpNetwork {
-    hidden [System.Net.IPNetwork] $network
-
-    [string]$Source
-    [System.Net.IPAddress]$BaseAddress
-    [int]$PrefixLength
-
-    static [hashtable[]] $MemberDefinitions = @(
-        @{
-            MemberType  = 'ScriptProperty'
-            MemberName  = 'BaseAddress'
-            Value       = { $this.network.BaseAddress }
-        }
-        @{
-            MemberType  = 'ScriptProperty'
-            MemberName  = 'PrefixLength'
-            Value       = { $this.network.PrefixLength }
-        }
-    )
-
-    static SpfIpNetwork() {
-        $TypeName = [SpfIpNetwork].Name
-        foreach ($Definition in [SpfIpNetwork]::MemberDefinitions) {
-            Update-TypeData -TypeName $TypeName -Force @Definition
-        }
-    }
-
-    SpfIpNetwork() {}
-
-    SpfIpNetwork([string]$source, [System.Net.IPNetwork]$network) {
-        $this.Source = $source
-        $this.network = $network
-    }
-
-    SpfIpNetwork([string]$source, [System.Net.IPAddress]$address, [int]$prefixLength) {
-        $this.Source = $source
-        #need compiled helper here to overcome powershell language limitations
-        $this.network = [IpHelper.IPAddressExtensions]::Mask($address,$prefixLength,$true)
-    }
-
-    [bool] Contains([System.Net.IPAddress]$address) {
-        return $this.network.Contains($address)
-    }
-    
-    static [SpfIpNetwork] Parse([string]$source, [string]$address) {
-        $parts = $address.Split('/')
-        $ip = [System.Net.IPAddress]::Parse($parts[0])
-        $mask = [int]$parts[1]
-        return [SpfIpNetwork]::new($source, $ip, $mask)
-    }
-
-    [string] ToString() {
-        return "$($this.BaseAddress)/$($this.PrefixLength)"
-    }
-
-}
-class SpfRecord
-{
-    hidden [string] $rawRecord
-
-    [string] $Version
-    [SpfAction] $FinalAction
-    [string] $Source
-    [object[]] $Entries
-
-    SpfRecord([string]$source, [string]$rawRecord) {
-        $this.RawRecord = $rawRecord
-        $this.Version = 'spf1'
-        $this.FinalAction = [SpfAction]::Neutral
-        $this.Source = $source
-        $this.Entries = @()
-    }
-
-    [string] ToString() {
-        return "Source: $($this.Source) Record: $($this.rawRecord)"
-    }
-
-    static [SpfRecord[]] Parse([string]$source, [string]$rawRecord) {
-        $retVal = @()
-        $record = [SpfRecord]::new($source, $rawRecord)
-        $retVal += $record
-
-        $parts = $rawRecord.Split(' ')
-        $continueParsing = $true
-
-        foreach($part in $parts)
-        {
-            if($part.StartsWith('v='))
-            {
-                $record.Version = $part.Substring(2)
-            }
-            #methods
-            elseif ($continueParsing -and ($part.StartsWith('ip4:') -or $part.StartsWith('ip6:')))
-            {
-                $ip = $part.Substring(4)
-                $prefix = $part.Substring(0, 3)
-                $record.Entries += [SpfEntry]::new($source, $prefix, $ip)
-                if($ip -match '/')
-                {
-                    $record.Entries += [SpfIpNetwork]::Parse($source, $ip)
-                }
-                else
-                {
-                    $record.Entries += [SpfIpAddress]::Parse($source, $ip)
-                }
-            }
-            elseif($continueParsing -and $part.StartsWith('include:'))
-            {
-                $domainName = $part.Substring(8)
-                $record.Entries += [SpfEntry]::new($source, 'include', $domainName)
-                if($retval.source -notcontains $domainName)
-                {
-                    $additionalRecords = [Dns]::GetSpfRecord($domainName)
-                    foreach($additionalRecord in $additionalRecords)
-                    {
-                        $retVal += [SpfRecord]::Parse($domainName, $additionalRecord)
-                    }
-                }
-                else
-                {
-                    Write-Warning "Cyclic reference: $domainName"
-                }
-            }
-            elseif($continueParsing -and $part.StartsWith('exists:') -or $part.StartsWith('ptr:') -or $part -eq 'ptr')
-            {
-                $splits = $part.Split(':')
-                if($splits.Length -gt 1)
-                {
-                    $record.Entries += [SpfEntry]::new($source, $splits[0], $splits[1])
-                }
-                else
-                {
-                    $record.Entries += [SpfEntry]::new($source, $part, $null)
-                }
-            }
-            elseif($continueParsing -and ($part.StartsWith('a:') -or $part.StartsWith('a/') -or $part -eq 'a' -or $part.StartsWith('+a:') -or $part.StartsWith('+a/') -or $part -eq '+a'))
-            {
-                $mask = -1
-                $splits = $part.Split('/')
-                if($splits.Length -gt 1)
-                {
-                    if(-not [int]::TryParse($splits[1], [ref]$mask))
-                    {
-                        Write-Warning "Invalid mask value in $part"
-                    }
-                }
-                $splits = $splits[0].Split(':')
-                $domainName = $source
-                if($splits.Length -gt 1)
-                {
-                    $domainName = $splits[1]
-                }
-                $start = 1
-                if($part[0] -eq '+')
-                {
-                    $start++
-                }
-
-                $record.Entries += [SpfEntry]::new($source, 'a', $part.Substring($start).Replace(':',''))
-                if($mask -eq -1)
-                {
-                    [SpfRecord]::ParseAMechanism($domainName, $part, [ref]$record)
-                }
-                else {
-                    [SpfRecord]::ParseAWithMaskMechanism($domainName, $mask, $part, [ref]$record)
-                }
-            }
-            elseif($continueParsing -and ($part.StartsWith('mx') -or $part.startsWith('+mx')))
-            {
-                $mask = -1
-                $splits = $part.Split('/')
-                if($splits.Length -gt 1)
-                {
-                    if(-not [int]::TryParse($splits[1], [ref]$mask))
-                    {
-                        Write-Warning "Invalid mask value in $part"
-                    }
-                }
-                $splits = $splits[0].Split(':')
-                $domainName = $source
-                if($splits.Length -gt 1)
-                {
-                    $domainName = $splits[1]
-                }
-                $start = 2
-                if($part[0] -eq '+')
-                {
-                    $start++
-                }
-                $record.Entries += [SpfEntry]::new($source, 'mx', $part.Substring($start).Replace(':',''))
-
-                $mx = [Dns]::GetRecord($domainName, [DnsClient.QueryType]::MX)
-                foreach($rec in $mx)
-                {
-                    if($null -eq $rec) {continue}
-                    $domainName = $rec -as [string]
-                    if($null -eq $domainName) {continue}
-                    if($mask -eq -1)
-                    {
-                        [SpfRecord]::ParseAMechanism($domainName, $part, [ref]$record)
-                    }
-                    else {
-                        [SpfRecord]::ParseAWithMaskMechanism($domainName, $mask, $part, [ref]$record)
-                    }
-                }
-            }
-            elseif($part -eq 'all' -or $part -eq '+all')
-            {
-                $record.FinalAction = [SpfAction]::Pass
-                $continueParsing = $false
-            }
-            elseif($part -eq '-all')
-            {
-                $record.FinalAction = [SpfAction]::Fail
-                $continueParsing = $false
-            }
-            elseif($part -eq '~all')
-            {
-                $record.FinalAction = [SpfAction]::SoftFail
-                $continueParsing = $false
-            }
-            elseif($part -eq '?all')
-            {
-                $record.FinalAction = [SpfAction]::Neutral
-                $continueParsing = $false
-            }
-            #Modifiers
-            elseif($part.StartsWith('redirect='))
-            {
-                $domainName = $part.Substring(9)
-                $record.Entries += [SpfEntry]::new($source, 'redirect', $domainName)
-                $additionalRecords = [Dns]::GetSpfRecord($domainName)
-                foreach($additionalRecord in $additionalRecords)
-                {
-                    $retVal += [SpfRecord]::Parse($domainName, $additionalRecord)
-                }
-            }
-            elseif($part.StartsWith('exp='))
-            {
-                $domainName = $part.Substring(4)
-                $record.Entries += [SpfEntry]::new($source, 'exp', $domainName)
-            }
-        }
-        
-        return $retVal
-    }
-
-    static [void] ParseAMechanism([string]$domain, [string]$rawEntry, [ref]$record) {
-        $records = [Dns]::GetRecord($domain, [DnsClient.QueryType]::A)
-        $records += [Dns]::GetRecord($domain, [DnsClient.QueryType]::AAAA)
-        foreach($rec in $records)
-        {
-            if($null -eq $rec) {continue}
-            $ip = $rec -as [System.Net.IPAddress]
-            if($null -eq $ip) {continue}
-            $record.Entries += [SpfIpAddress]::new("$domain $rawEntry", $ip)
-        }
-    }
-
-    static [void] ParseAWithMaskMechanism([string]$domain, [int]$mask, [string]$rawEntry, [ref]$record) {
-        $records = [Dns]::GetRecord($domain, [DnsClient.QueryType]::A)
-        $records += [Dns]::GetRecord($domain, [DnsClient.QueryType]::AAAA)
-        foreach($rec in $records)
-        {
-            if($null -eq $rec) {continue}
-            $ip = $rec -as [System.Net.IPAddress]
-            if($null -eq $ip) {continue}
-            $record.Entries += [SpfIpNetwork]::new("$domain $rawEntry", $ip, $mask)
-        }
-    }
-}
-#endregion Classes
 #region Public commands
 function Get-DkimRecord
 {
@@ -538,11 +11,11 @@ function Get-DkimRecord
     DkimRecord[]
 
 .EXAMPLE
-Get-DkimRecord -Domain 'microsoft.com'
+Get-DkimRecord -Domain 'microsoft.com' -Record 'selector1._domainkey'
 
 Description
 -----------
-Retrieves and parses DKIM record for microsoft.com domain
+Retrieves and parses DKIM record selector1._domainKey for microsoft.com domain
 
 .LINK
 More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7208
@@ -552,16 +25,55 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     (
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Domain,
+        [Parameter(Mandatory)]
         [string]$Record
     )
 
     process
     {
         $dnsName = $record + '.' + $domain
-        $dkimRecords = [Dns]::GetDkimRecord($dnsName)
+        $dkimRecords = [SpfAnalyzer.Dns]::GetDkimRecord($dnsName)
         foreach($record in $dkimRecords)
         {
-            [DkimRecord]::Parse($domain, $dnsName, $record)
+            [SpfAnalyzer.DkimRecord]::Parse($domain, $dnsName, $record)
+        }
+    }    
+}
+function Get-DmarcRecord
+{
+<#
+.SYNOPSIS
+    Retrieves and parses Dmarc record for given domain
+
+.DESCRIPTION
+    This command takes given DNS domain and tries to load and interpret dmarc record, if the domain publishes one
+.OUTPUTS
+    DmarcRecord[]
+
+.EXAMPLE
+Get-DmarcRecord -Domain 'microsoft.com'
+
+Description
+-----------
+Retrieves and parses Dmarc record for microsoft.com domain
+
+.LINK
+More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7208
+#>
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [string]$Domain
+    )
+
+    process
+    {
+        $dnsName = '_dmarc.{0}' -f $domain
+        $records = [SpfAnalyzer.Dns]::GetDmarcRecord($dnsName)
+        foreach($record in $records)
+        {
+            [SpfAnalyzer.DmarcRecord]::Parse($domain, $dnsName, $record)
         }
     }    
 }
@@ -597,10 +109,10 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
 
     process
     {
-        $spfRecords = [Dns]::GetSpfRecord($domain)
+        $spfRecords = [SpfAnalyzer.Dns]::GetSpfRecord($domain)
         foreach($spfRecord in $spfRecords)
         {
-            [SpfRecord]::Parse($domain, $spfRecord)
+            [SpfAnalyzer.SpfRecord]::Parse($domain, $domain, $spfRecord, 0)
         }
     }    
 }
@@ -654,7 +166,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
             $record = $SpfRecord
         }
         Write-Verbose "Processing $record"
-        $record.Entries | Where-Object{$_ -is [SpfEntry]}
+        $record.Entries
     }    
 }
 function Get-SpfRecordIpAddress
@@ -683,7 +195,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
-        [SpfRecord]$SpfRecord,
+        [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain
     )
@@ -693,7 +205,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            [SpfRecord[]]$record = Get-SpfRecord -Domain $Domain 
+            $record = Get-SpfRecord -Domain $Domain 
         }
         else
         {
@@ -701,7 +213,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         }
 
         Write-Verbose "Processing $record"
-        $record.Entries | Where-Object { $_ -is [SpfIpAddress] }
+        $record.IpAddresses
     }
 }
 function Get-SpfRecordIpNetwork
@@ -730,7 +242,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
-        [SpfRecord]$SpfRecord,
+        [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain
     )
@@ -740,7 +252,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            [SpfRecord[]]$record = Get-SpfRecord -Domain $Domain 
+            $record = Get-SpfRecord -Domain $Domain 
         }
         else
         {
@@ -748,7 +260,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         }
 
         Write-Verbose "Processing $record"
-        $record.Entries | Where-Object { $_ -is [SpfIpNetwork] }
+        $record.IpNetworks
     }
 }
 function Test-SpfHost
@@ -780,7 +292,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
-        [SpfRecord]$SpfRecord,
+        [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
         [Parameter(Mandatory)]
@@ -795,7 +307,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            [SpfRecord[]]$spfRecords = Get-SpfRecord -Domain $Domain `
+            $spfRecords = Get-SpfRecord -Domain $Domain `
         }
         else
         {
@@ -838,7 +350,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
                     $rawRecord = [Dns]::GetRecord($macro, [DnsClient.QueryType]::TXT)
                     if($null -ne $rawRecord)
                     {
-                        $additionalRecord = [SpfRecord]::Parse($_.Source, $rawRecord)
+                        $additionalRecord = [SpfAnalyzer.SpfRecord]::Parse($_.Source, $rawRecord)
                         $additionalRecord `
                         | Test-SpfHost -IpAddress $IpAddress -SenderAddress $SenderAddress
                     }
@@ -880,7 +392,7 @@ param
 
     process
     {
-        [SpfRecord]::Parse($Domain, $RawRecord)
+        [SpfAnalyzer.SpfRecord]::Parse($Domain, $Domain, $RawRecord, 0)
     }
 }
 #endregion Public commands

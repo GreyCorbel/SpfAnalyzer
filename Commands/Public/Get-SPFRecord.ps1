@@ -30,10 +30,10 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
 
     process
     {
-        $spfRecords = [Dns]::GetSpfRecord($domain)
+        $spfRecords = [SpfAnalyzer.Dns]::GetSpfRecord($domain)
         foreach($spfRecord in $spfRecords)
         {
-            [SpfRecord]::Parse($domain, $spfRecord)
+            [SpfAnalyzer.SpfRecord]::Parse($domain, $domain, $spfRecord, 0)
         }
     }    
 }
