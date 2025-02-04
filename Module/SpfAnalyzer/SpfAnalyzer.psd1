@@ -87,7 +87,8 @@ AliasesToExport = @()
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = @( '/lib/net8.0/IpHelper.dll','lib/net8.0/DnsClient.dll','lib/net8.0/SpfAnalyzer.dll' )
+FileList = @( './SpfAnalyzer.psd1', './SpfAnalyzer.psm1', './SpfAnalyzer.format.ps1xml',
+            './lib/net8.0/IpHelper.dll', './lib/net8.0/DnsClient.dll','./lib/net8.0/SpfAnalyzer.dll' )
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
@@ -109,7 +110,7 @@ PrivateData = @{
         # ReleaseNotes = ''
 
         # Prerelease string of this module
-        Prerelease = 'beta2'
+        Prerelease = 'beta3'
 
         # Flag to indicate whether the module requires explicit user acceptance for install/update/save
         # RequireLicenseAcceptance = $false
