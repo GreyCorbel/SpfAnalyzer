@@ -47,7 +47,7 @@ jobs:
       run:  dotnet restore "$env:GITHUB_WORKSPACE/src/SpfAnalyzer"
 
     - name: Build - SpfAnalyzer
-      run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore --configuration Release /p:Version=$env.MODULE_VERSION
+      run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore --configuration Release /p:Version=$env:MODULE_VERSION
 
     - name: Build module
       shell: pwsh
