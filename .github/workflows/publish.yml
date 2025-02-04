@@ -26,12 +26,28 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    
+
+    - name: Detect module version
+      shell: pwsh
+      run: |
+        $moduleName = $env:MODULE_NAME
+        $manifest = Import-PowerShellDataFile -Path "$env:GITHUB_WORKSPACE\Module\$moduleName\$moduleName.psd1"
+        $moduleVersion = $manifest.ModuleVersion
+        $prereleaase = $manifest.privateData.psdata.prerelease
+        if ($prereleaase) {
+            $moduleVersion = "$moduleVersion-$prereleaase"
+        }
+        else {
+            $moduleVersion = "$moduleVersion"
+        }
+        Write-Output "Module version: $moduleVersion"
+        $env:MODULE_VERSION = $moduleVersion
+
     - name: Restore dependencies
       run:  dotnet restore "$env:GITHUB_WORKSPACE/src/SpfAnalyzer"
 
     - name: Build - SpfAnalyzer
-      run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore
+      run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore --configuration Release /p:Version=${{ env.MODULE_VERSION }}
 
     - name: Build module
       shell: pwsh
