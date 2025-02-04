@@ -41,7 +41,7 @@ jobs:
             $moduleVersion = "$moduleVersion"
         }
         Write-Output "Module version: $moduleVersion"
-        echo "MODULE_VERSION = $moduleVersion" >> $env:GITHUB_ENV
+        echo "MODULE_VERSION=$moduleVersion" >> $env:GITHUB_ENV
 
     - name: Restore dependencies
       run:  dotnet restore "$env:GITHUB_WORKSPACE/src/SpfAnalyzer"
