@@ -21,15 +21,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: nuget/setup-nuget@v1
-      with:
-        nuget-version: 'latest'
 
-    - name: test
-      shell: pwsh
-      run: |
-        dir env:
-      
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
@@ -38,11 +30,16 @@ jobs:
     - name: Restore dependencies - IpHelper
       run:  dotnet restore "$env:GITHUB_WORKSPACE/src/IpHelper"
 
-    - name: Build - IpHelper
-      run:  dotnet build "$env:GITHUB_WORKSPACE/src/IpHelper" --no-restore
-
     - name: Restore dependencies - SpfAnalyzer
       run:  dotnet restore "$env:GITHUB_WORKSPACE/src/SpfAnalyzer"
+
+    - name: test
+      shell: pwsh
+      run: |
+        dir $env:userprofile\.nuget\packages\DnsClient\*
+
+    - name: Build - IpHelper
+      run:  dotnet build "$env:GITHUB_WORKSPACE/src/IpHelper" --no-restore
 
     - name: Build - SpfAnalyzer
       run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore
@@ -86,7 +83,7 @@ jobs:
       run: |
           $moduleName = $env:MODULE_NAME
           "Setting up packages"
-          &"$env:GITHUB_WORKSPACE\Workflow\SetupPackages.ps1" -ModuleName $moduleName -RootPath "$env:GITHUB_WORKSPACE" -NugetPath $env:nuget
+          &"$env:GITHUB_WORKSPACE\Workflow\SetupPackages.ps1" -ModuleName $moduleName -RootPath "$env:GITHUB_WORKSPACE"
 
     - name: Publish
       #Publish to PS Gallery

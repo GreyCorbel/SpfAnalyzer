@@ -7,14 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\IpHelper\IpHelper.csproj" />
+    <PackageReference Include="DnsClient" Version="1.8.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="DnsClient">
-      <HintPath>..\..\Module\SpfAnalyzer\lib\net8.0\DnsClient.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\IpHelper\IpHelper.csproj" />
   </ItemGroup>
+
 	<Target Name="CopyFiles" AfterTargets="CopyFilesToOutputDirectory">
 		<ItemGroup>
 			<!-- Because this ItemGroup is inside the target, this will enumerate
@@ -23,9 +22,7 @@
 			the build starts, which may miss files created during the build. -->
 			<BuildOutput Include="$(TargetPath)" />
 		</ItemGroup>
-		<Copy
-			SourceFiles="@(BuildOutput)"
-			DestinationFolder="$(ProjectDir)/../../Module/SpfAnalyzer/lib/net8.0/" />
+		<Copy SourceFiles="@(BuildOutput)" DestinationFolder="$(ProjectDir)/../../Module/SpfAnalyzer/lib/net8.0/" />
 	</Target>
 
 </Project>
