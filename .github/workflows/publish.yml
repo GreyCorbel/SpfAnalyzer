@@ -25,6 +25,11 @@ jobs:
       with:
         nuget-version: 'latest'
 
+    - name: test
+      shell: pwsh
+      run: |
+        dir env:
+      
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
