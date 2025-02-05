@@ -6,13 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SpfAnalyzer\SpfAnalyzer.csproj" />
+    <PackageReference Include="System.Management.Automation" Version="7.4.7" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Management.Automation">
-      <HintPath>..\..\..\..\..\Windows\assembly\GAC_MSIL\System.Management.Automation\1.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\SpfAnalyzer\SpfAnalyzer.csproj" />
   </ItemGroup>
 	<Target Name="CopyFiles" AfterTargets="CopyFilesToOutputDirectory">
 		<ItemGroup>
