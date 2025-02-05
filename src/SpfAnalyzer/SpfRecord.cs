@@ -49,11 +49,9 @@ namespace SpfAnalyzer
             }
         }
 
-        public string OriginalRecord => _rawRecord ?? string.Empty;
-
         public override string ToString()
         {
-            return $"Source: {Source} Record: {_rawRecord}";
+            return _rawRecord ?? string.Empty;
         }
         public SpfRecord()
         {

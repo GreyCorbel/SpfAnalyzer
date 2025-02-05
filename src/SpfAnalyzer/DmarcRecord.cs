@@ -17,8 +17,6 @@ namespace SpfAnalyzer
         List<DmarcEntry> _entries = new List<DmarcEntry>();
         public IReadOnlyList<DmarcEntry> Entries => _entries;
 
-        public string OriginalRecord => _rawRecord ?? ToString();
-
         public DmarcRecord()
         {
         }
@@ -65,13 +63,7 @@ namespace SpfAnalyzer
 
         public override string ToString()
         {
-            var sb = new StringBuilder();
-            sb.Append("v=" + Version);
-            foreach (var entry in _entries)
-            {
-                sb.Append(";" + entry.ToString());
-            }
-            return sb.ToString();
+            return _rawRecord?? string.Empty;
         }
     }
 }

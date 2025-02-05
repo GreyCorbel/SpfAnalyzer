@@ -15,8 +15,6 @@ namespace SpfAnalyzer
         public string? Source { get; set; }
         public DkimPublicKey? PublicKey { get; set; }
 
-        public string OriginalRecord => _rawRecord ?? ToString();
-
         List<DkimEntry> _entries = new List<DkimEntry>();
         public IReadOnlyList<DkimEntry> Entries => _entries;
 
@@ -84,13 +82,7 @@ namespace SpfAnalyzer
 
         public override string ToString()
         {
-            var sb = new StringBuilder();
-            sb.Append("v=" + Version);
-            foreach (var entry in _entries)
-            {
-                sb.Append(";" + entry.ToString());
-            }
-            return sb.ToString();
+            return _rawRecord ?? string.Empty;
         }
     }
 }
