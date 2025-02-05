@@ -15,6 +15,8 @@ namespace SpfAnalyzer
         public string? Source { get; set; }
         public DkimPublicKey? PublicKey { get; set; }
 
+        public string OriginalRecord => _rawRecord ?? ToString();
+
         List<DkimEntry> _entries = new List<DkimEntry>();
         public IReadOnlyList<DkimEntry> Entries => _entries;
 

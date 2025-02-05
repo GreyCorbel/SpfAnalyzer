@@ -17,6 +17,8 @@ namespace SpfAnalyzer
         List<DmarcEntry> _entries = new List<DmarcEntry>();
         public IReadOnlyList<DmarcEntry> Entries => _entries;
 
+        public string OriginalRecord => _rawRecord ?? ToString();
+
         public DmarcRecord()
         {
         }

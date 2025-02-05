@@ -49,7 +49,7 @@ namespace SpfAnalyzer
             }
         }
 
-
+        public string OriginalRecord => _rawRecord ?? string.Empty;
 
         public override string ToString()
         {
