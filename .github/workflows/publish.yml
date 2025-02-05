@@ -43,8 +43,11 @@ jobs:
         Write-Output "Module version: $moduleVersion"
         echo "MODULE_VERSION=$moduleVersion" >> $env:GITHUB_ENV
 
-    - name: Restore dependencies
+    - name: Restore dependencies - SpfAnalyzer
       run:  dotnet restore "$env:GITHUB_WORKSPACE/src/SpfAnalyzer"
+
+    - name: Restore dependencies - AutomationHelper
+      run:  dotnet restore "$env:GITHUB_WORKSPACE/src/AutomationHelper"
 
     - name: Build - SpfAnalyzer
       run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore --configuration Release /p:Version=$env:MODULE_VERSION
