@@ -13,6 +13,11 @@ namespace SpfAnalyzer
         public string Source { get; set; }
         public IPAddress Address { get; set; }
 
+        public SpfIpAddress()
+        {
+            Source = string.Empty;
+            Address = IPAddress.None;
+        }
         public SpfIpAddress(string source, IPAddress address)
         {
             Source = source;
@@ -24,13 +29,16 @@ namespace SpfAnalyzer
             return new SpfIpNetwork(Source, Address, prefixLength);
         }
 
-        public static SpfIpAddress Parse(string source, string value)
+        public static bool TryParse(string source, string value, ILogger? logger, out SpfIpAddress spfAddress)
         {
             if (IPAddress.TryParse(value, out var address))
             {
-                return new SpfIpAddress(source, address);
+                spfAddress = new SpfIpAddress(source, address);
+                return true;
             }
-            throw new ArgumentException($"Invalid IP address: {value}");
+            logger?.LogWarning($"Invalid IP address: {value}");
+            spfAddress = new SpfIpAddress();
+            return false;
         }
         public override string ToString()
         {

@@ -25,16 +25,25 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Domain,
         [Parameter(Mandatory)]
-        [string]$Record
+        [string]$Record,
+        [Parameter()]
+        [string]$DnsServerIpAddress
     )
-
+    begin
+    {
+        $logger = new-object AutomationHelper.Logger($PSCmdlet)
+        $parsedRecord = $null
+    }
     process
     {
         $dnsName = $record + '.' + $domain
-        $dkimRecords = [SpfAnalyzer.Dns]::GetDkimRecord($dnsName)
+        $dkimRecords = [SpfAnalyzer.Dns]::GetDkimRecord($dnsName, $DnsServerIpAddress)
         foreach($record in $dkimRecords)
         {
-            [SpfAnalyzer.DkimRecord]::Parse($domain, $dnsName, $record)
+            if([SpfAnalyzer.DkimRecord]::TryParse($domain, $dnsName, $record, $logger, [ref] $parsedRecord))
+            {
+                $parsedRecord
+            }
         }
     }    
 }

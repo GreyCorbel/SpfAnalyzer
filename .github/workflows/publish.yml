@@ -49,6 +49,12 @@ jobs:
     - name: Build - SpfAnalyzer
       run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfAnalyzer" --no-restore --configuration Release /p:Version=$env:MODULE_VERSION
 
+    - name: Build - SpfIpHelper
+      run:  dotnet build "$env:GITHUB_WORKSPACE/src/SpfIpHelper" --no-restore --configuration Release /p:Version=$env:MODULE_VERSION
+
+    - name: Build - AutomationHelper
+      run:  dotnet build "$env:GITHUB_WORKSPACE/src/AutomationHelper" --no-restore --configuration Release /p:Version=$env:MODULE_VERSION
+
     - name: Build module
       shell: pwsh
       run: |

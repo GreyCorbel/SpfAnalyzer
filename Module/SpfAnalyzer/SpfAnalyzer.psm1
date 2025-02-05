@@ -26,16 +26,25 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Domain,
         [Parameter(Mandatory)]
-        [string]$Record
+        [string]$Record,
+        [Parameter()]
+        [string]$DnsServerIpAddress
     )
-
+    begin
+    {
+        $logger = new-object AutomationHelper.Logger($PSCmdlet)
+        $parsedRecord = $null
+    }
     process
     {
         $dnsName = $record + '.' + $domain
-        $dkimRecords = [SpfAnalyzer.Dns]::GetDkimRecord($dnsName)
+        $dkimRecords = [SpfAnalyzer.Dns]::GetDkimRecord($dnsName, $DnsServerIpAddress)
         foreach($record in $dkimRecords)
         {
-            [SpfAnalyzer.DkimRecord]::Parse($domain, $dnsName, $record)
+            if([SpfAnalyzer.DkimRecord]::TryParse($domain, $dnsName, $record, $logger, [ref] $parsedRecord))
+            {
+                $parsedRecord
+            }
         }
     }    
 }
@@ -64,16 +73,26 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline)]
-        [string]$Domain
+        [string]$Domain,
+        [Parameter()]
+        [string]$DnsServerIpAddress
     )
 
+    begin
+    {
+        $logger = new-object AutomationHelper.Logger($PSCmdlet)
+        $parsedRecord = $null
+    }
     process
     {
         $dnsName = '_dmarc.{0}' -f $domain
-        $records = [SpfAnalyzer.Dns]::GetDmarcRecord($dnsName)
+        $records = [SpfAnalyzer.Dns]::GetDmarcRecord($dnsName, $DnsServerIpAddress)
         foreach($record in $records)
         {
-            [SpfAnalyzer.DmarcRecord]::Parse($domain, $dnsName, $record)
+            if([SpfAnalyzer.DmarcRecord]::TryParse($domain, $dnsName, $record, $logger, [ref] $parsedRecord))
+            {
+                $parsedRecord
+            }
         }
     }    
 }
@@ -104,15 +123,26 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline)]
-        [string]$Domain
+        [string]$Domain,
+        [Parameter()]
+        [string]$DnsServerIpAddress
     )
 
+    begin
+    {
+        $logger = new-object AutomationHelper.Logger($PSCmdlet)
+        $parsedRecord = $null
+    }
     process
     {
-        $spfRecords = [SpfAnalyzer.Dns]::GetSpfRecord($domain)
+        $spfRecords = [SpfAnalyzer.Dns]::GetSpfRecord($domain, $DnsServerIpAddress)
         foreach($spfRecord in $spfRecords)
         {
-            [SpfAnalyzer.SpfRecord]::Parse($domain, $domain, $spfRecord, 0)
+            $success = [SpfAnalyzer.SpfRecord]::TryParse($domain, $domain, $spfRecord, 0, $logger, [ref] $parsedRecord)
+            if($success)
+            {
+                $parsedRecord
+            }
         }
     }    
 }
@@ -149,7 +179,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
-        [SpfRecord]$SpfRecord,
+        [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain
     )
@@ -159,7 +189,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            [SpfRecord[]]$record = Get-SpfRecord -Domain $Domain `
+            $record = Get-SpfRecord -Domain $Domain
         }
         else
         {
@@ -418,11 +448,11 @@ function Expand-SpfMacro
             $senderValid = $senderParts.Count -eq 2
         }
         if($macro -match '%{i}') {
-            $dottedIp = [IpHelper.IPAddressExtensions]::ToDotted($IpAddress)
+            $dottedIp = [SpfIpHelper.IPAddressExtensions]::ToDotted($IpAddress)
             $macro = $macro -replace '%{i}', $dottedIp
         }
         if($macro -match '%{ir}') {
-            $dottedIp = [IpHelper.IPAddressExtensions]::ToReverseDotted($IpAddress)
+            $dottedIp = [SpfIpHelper.IPAddressExtensions]::ToReverseDotted($IpAddress)
             $macro = $macro -replace '%{ir}', $dottedIp
         }
         if($macro -match '%{c}') {

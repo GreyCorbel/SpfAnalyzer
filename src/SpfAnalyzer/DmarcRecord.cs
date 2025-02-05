@@ -28,8 +28,9 @@ namespace SpfAnalyzer
             _rawRecord = rawRecord;
         }
 
-        public static DmarcRecord[] Parse(string domain, string source, string rawRecord)
+        public static bool TryParse(string domain, string source, string rawRecord, ILogger? logger, out DmarcRecord[] dmarcRecord)
         {
+            logger?.LogVerbose($"Processing record {rawRecord}");
             var retVal = new List<DmarcRecord>();
 
             var record = new DmarcRecord(domain, source, rawRecord);
@@ -56,7 +57,8 @@ namespace SpfAnalyzer
                     record._entries.Add(new DmarcEntry(domain, source, tag, value));
                 }
             }
-            return retVal.ToArray();
+            dmarcRecord = retVal.ToArray();
+            return true;
         }
 
         public override string ToString()

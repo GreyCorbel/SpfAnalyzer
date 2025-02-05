@@ -19,11 +19,11 @@ function Expand-SpfMacro
             $senderValid = $senderParts.Count -eq 2
         }
         if($macro -match '%{i}') {
-            $dottedIp = [IpHelper.IPAddressExtensions]::ToDotted($IpAddress)
+            $dottedIp = [SpfIpHelper.IPAddressExtensions]::ToDotted($IpAddress)
             $macro = $macro -replace '%{i}', $dottedIp
         }
         if($macro -match '%{ir}') {
-            $dottedIp = [IpHelper.IPAddressExtensions]::ToReverseDotted($IpAddress)
+            $dottedIp = [SpfIpHelper.IPAddressExtensions]::ToReverseDotted($IpAddress)
             $macro = $macro -replace '%{ir}', $dottedIp
         }
         if($macro -match '%{c}') {

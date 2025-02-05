@@ -7,11 +7,12 @@ namespace TestApp
         {
             var domain = "ibm.com";
             var record = SpfAnalyzer.Dns.GetSpfRecord(domain);
-            var results = SpfAnalyzer.SpfRecord.Parse(domain, domain, record[0], 0);
-            foreach (var result in results)
-            {
-                Console.WriteLine(result.ToString());
-            }
+            
+            if(SpfAnalyzer.SpfRecord.TryParse(domain, domain, record[0], 0, null, out var results))
+                foreach (var result in results)
+                {
+                    Console.WriteLine(result.ToString());
+                }
         }
     }
 }

@@ -29,8 +29,9 @@ namespace SpfAnalyzer
             _rawRecord = rawRecord;
         }
 
-        public static DkimRecord[] Parse(string domain, string source, string rawRecord)
+        public static bool TryParse(string domain, string source, string rawRecord, ILogger? logger, out DkimRecord[] dkimRecords)
         {
+            logger?.LogVerbose($"Processing record {rawRecord}");
             var retVal = new List<DkimRecord>();
             var record = new DkimRecord(domain, source, rawRecord);
             retVal.Add(record);
@@ -75,7 +76,8 @@ namespace SpfAnalyzer
             {
                 record.PublicKey = DkimPublicKey.Parse(algo, key);
             }
-            return retVal.ToArray();
+            dkimRecords = [.. retVal];
+            return true;
         }
 
         public override string ToString()

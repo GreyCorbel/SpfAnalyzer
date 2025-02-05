@@ -31,7 +31,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
-        [SpfRecord]$SpfRecord,
+        [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain
     )
@@ -41,7 +41,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            [SpfRecord[]]$record = Get-SpfRecord -Domain $Domain `
+            $record = Get-SpfRecord -Domain $Domain
         }
         else
         {

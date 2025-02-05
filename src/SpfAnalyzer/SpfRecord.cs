@@ -70,8 +70,9 @@ namespace SpfAnalyzer
 
         }
 
-        public static List<SpfRecord> Parse(string domain, string source, string rawRecord, int depth)
+        public static bool TryParse(string domain, string source, string rawRecord, int depth, ILogger? logger, out SpfRecord[] spfRecords)
         {
+            logger?.LogVerbose($"Parsing SPF record: {rawRecord}");
             var record = new SpfRecord(source, domain, rawRecord);
             record.Depth = depth;
             var retVal = new List<SpfRecord>();
@@ -80,7 +81,9 @@ namespace SpfAnalyzer
             var parts = rawRecord.Split(' ');
             if (parts.Length < 2)
             {
-                throw new ArgumentException($"Invalid SPF record: {rawRecord}");
+                logger?.LogWarning($"Invalid SPF record: {rawRecord}");
+                spfRecords = Array.Empty<SpfRecord>();
+                return false;
             }
 
             bool continueParsing = true;
@@ -106,9 +109,13 @@ namespace SpfAnalyzer
                         var additionalRecords = Dns.GetSpfRecord(includeDomain);
                         foreach (var additionalRecord in additionalRecords)
                         {
-                            var additionalSpfRecord = Parse(domain, includeDomain, additionalRecord, record.Depth + 1);
-                            retVal.AddRange(additionalSpfRecord);
+                            if( TryParse(domain, includeDomain, additionalRecord, record.Depth + 1, logger, out SpfRecord[] additionalSpfRecord))
+                                retVal.AddRange(additionalSpfRecord);
                         }
+                    }
+                    else
+                    {
+                        logger?.LogWarning($"Infinite recursion detected for domain: {includeDomain}");
                     }
                 }
                 else if (continueParsing && (part.StartsWith("exists:") || part.StartsWith("ptr:") || part.StartsWith("ptr")))
@@ -210,8 +217,8 @@ namespace SpfAnalyzer
                     var additionalRecords = Dns.GetSpfRecord(redirectDomain);
                     foreach (var additionalRecord in additionalRecords)
                     {
-                        var additionalSpfRecord = Parse(domain, redirectDomain, additionalRecord, record.Depth + 1);
-                        retVal.AddRange(additionalSpfRecord);
+                        if( TryParse(domain, redirectDomain, additionalRecord, record.Depth + 1, logger, out var additionalSpfRecord))
+                            retVal.AddRange(additionalSpfRecord);
                     }
                 }
                 else if (continueParsing && part.StartsWith("exp="))
@@ -224,14 +231,20 @@ namespace SpfAnalyzer
             {
                 if ((entry.Prefix == "ip4" || entry.Prefix == "ip6") && entry?.Value != null)
                 {
-                    if(!entry.Value.Contains("/"))
-                        record._ipAddresses.Add(SpfIpAddress.Parse(source, entry.Value));   
+                    if(entry.Value.Contains("/"))
+                    {
+                        if(SpfIpNetwork.TryParse(source, entry.Value, logger, out var ipNetwork))
+                            record._ipNetworks.Add(ipNetwork);
+                    }
                     else
-                        record._ipNetworks.Add(SpfIpNetwork.Parse(source, entry.Value));
+                    {
+                        if (SpfIpAddress.TryParse(source, entry.Value, logger, out var ipAddress))
+                            record._ipAddresses.Add(ipAddress);   
+                    }
                 }
             }
-
-            return retVal;
+            spfRecords = retVal.ToArray();
+            return true;
         }
 
         static void ParseAMechanism(string fqdn, string source, ref SpfRecord record)

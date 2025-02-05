@@ -23,16 +23,26 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     param
     (
         [Parameter(Mandatory, ValueFromPipeline)]
-        [string]$Domain
+        [string]$Domain,
+        [Parameter()]
+        [string]$DnsServerIpAddress
     )
 
+    begin
+    {
+        $logger = new-object AutomationHelper.Logger($PSCmdlet)
+        $parsedRecord = $null
+    }
     process
     {
         $dnsName = '_dmarc.{0}' -f $domain
-        $records = [SpfAnalyzer.Dns]::GetDmarcRecord($dnsName)
+        $records = [SpfAnalyzer.Dns]::GetDmarcRecord($dnsName, $DnsServerIpAddress)
         foreach($record in $records)
         {
-            [SpfAnalyzer.DmarcRecord]::Parse($domain, $dnsName, $record)
+            if([SpfAnalyzer.DmarcRecord]::TryParse($domain, $dnsName, $record, $logger, [ref] $parsedRecord))
+            {
+                $parsedRecord
+            }
         }
     }    
 }

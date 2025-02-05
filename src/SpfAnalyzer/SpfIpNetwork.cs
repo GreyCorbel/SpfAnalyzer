@@ -45,16 +45,26 @@ namespace SpfAnalyzer
         {
             return _network?.Contains(address) ?? false;
         }
-        public static SpfIpNetwork Parse(string source, string cidr)
+        public static bool TryParse(string source, string cidr, ILogger? logger, out SpfIpNetwork network)
         {
             var parts = cidr.Split('/');
             if (parts.Length != 2)
             {
                 throw new ArgumentException($"Invalid CIDR format: {cidr}");
             }
-            var address = IPAddress.Parse(parts[0]);
-            var prefixLength = int.Parse(parts[1]);
-            return new SpfIpNetwork(source, address, prefixLength);
+            try
+            {
+                var address = IPAddress.Parse(parts[0]);
+                var prefixLength = int.Parse(parts[1]);
+                network = new SpfIpNetwork(source, address, prefixLength);
+                return true;
+            }
+            catch (Exception)
+            {
+                logger?.LogWarning($"Invalid network address: {parts[0]}");
+            }
+            network = new SpfIpNetwork();
+            return false;
         }
         public override string ToString()
         {

@@ -54,7 +54,7 @@ PowerShellVersion = '7.2'
 # RequiredModules = @('')
 
 # Assemblies that must be loaded prior to importing this module
-RequiredAssemblies = @('.\lib\net8.0/IpHelper.dll', '.\lib\net8.0/DnsClient.dll', '.\lib\net8.0/SpfAnalyzer.dll')
+RequiredAssemblies = @('.\lib\net8.0\SpfAnalyzer.dll',  '.\lib\net8.0\AutomationHelper.dll', '.\lib\net8.0\SpfIpHelper.dll', '.\lib\net8.0\DnsClient.dll')
 
 # Script files (.ps1) that are run in the caller's environment prior to importing this module.
 # ScriptsToProcess = @()
@@ -88,7 +88,7 @@ AliasesToExport = @()
 
 # List of all files packaged with this module
 FileList = @( './SpfAnalyzer.psd1', './SpfAnalyzer.psm1', './SpfAnalyzer.format.ps1xml',
-            './lib/net8.0/IpHelper.dll', './lib/net8.0/DnsClient.dll','./lib/net8.0/SpfAnalyzer.dll' )
+            './lib/net8.0/SpfIpHelper.dll', './lib/net8.0/DnsClient.dll','./lib/net8.0/SpfAnalyzer.dll', './lib/net8.0/AutomationHelper.dll' )
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

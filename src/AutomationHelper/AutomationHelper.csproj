@@ -2,18 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DnsClient" Version="1.8.0" />
+    <ProjectReference Include="..\SpfAnalyzer\SpfAnalyzer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SpfIpHelper\SpfIpHelper.csproj" />
+    <Reference Include="System.Management.Automation">
+      <HintPath>..\..\..\..\..\Windows\assembly\GAC_MSIL\System.Management.Automation\1.0.0.0__31bf3856ad364e35\System.Management.Automation.dll</HintPath>
+    </Reference>
   </ItemGroup>
-
 	<Target Name="CopyFiles" AfterTargets="CopyFilesToOutputDirectory">
 		<ItemGroup>
 			<!-- Because this ItemGroup is inside the target, this will enumerate

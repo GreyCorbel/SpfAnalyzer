@@ -1,15 +1,29 @@
 ﻿using DnsClient;
+using System.Net;
 
 namespace SpfAnalyzer
 {
     public static class Dns
     {
-        static readonly LookupClient _client = new LookupClient();
+        static LookupClient _client;
 
-        public static object[] GetRecord(string name, QueryType queryType)
+        public static object[] GetRecord(string name, QueryType queryType, string? serverIpAddress=null)
         {
+            if (string.IsNullOrEmpty(serverIpAddress))
+                _client = new LookupClient();
+            else
+            {
+                if(IPAddress.TryParse(serverIpAddress, out var ip))
+                {
+                    _client = new LookupClient(new LookupClientOptions(ip));
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid IP address", nameof(serverIpAddress));
+                }
+            }
             List<object> result = new List<object>();
-
+            
             switch (queryType)
             {
                 case QueryType.A:
@@ -40,9 +54,9 @@ namespace SpfAnalyzer
             return [.. result];
         }
 
-        public static string[] GetSpfRecord(string name)
+        public static string[] GetSpfRecord(string name, string? serverIpAddress = null)
         {
-            var data = GetRecord(name, QueryType.TXT);
+            var data = GetRecord(name, QueryType.TXT, serverIpAddress);
             List<string> result = new List<string>();
             if(null!= data)
             {
@@ -60,9 +74,9 @@ namespace SpfAnalyzer
             return result.ToArray();
         }
 
-        public static string[] GetDkimRecord(string name)
+        public static string[] GetDkimRecord(string name, string? serverIpAddress = null)
         {
-            var data = GetRecord(name, QueryType.TXT);
+            var data = GetRecord(name, QueryType.TXT, serverIpAddress);
             List<string> result = new List<string>();
             if (null != data)
             {
@@ -77,9 +91,9 @@ namespace SpfAnalyzer
             return result.ToArray();
         }
 
-        public static string[] GetDmarcRecord(string name)
+        public static string[] GetDmarcRecord(string name, string? serverIpAddress = null)
         {
-            var data = GetRecord(name, QueryType.TXT);
+            var data = GetRecord(name, QueryType.TXT, serverIpAddress);
             List<string> result = new List<string>();
             if (null != data)
             {
