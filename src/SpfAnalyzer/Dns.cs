@@ -3,25 +3,38 @@ using System.Net;
 
 namespace SpfAnalyzer
 {
-    public static class Dns
+    public class Dns
     {
-        static LookupClient _client;
+        LookupClient _client;
 
-        public static object[] GetRecord(string name, QueryType queryType, string? serverIpAddress=null)
+        public Dns()
         {
-            if (string.IsNullOrEmpty(serverIpAddress))
-                _client = new LookupClient();
-            else
+            _client = new LookupClient();
+        }
+        public Dns(string[] serverIpAddresses)
+        {
+            var ips = new List<IPAddress>();
+            if(null != serverIpAddresses)
             {
-                if(IPAddress.TryParse(serverIpAddress, out var ip))
+                foreach (var ip in serverIpAddresses)
                 {
-                    _client = new LookupClient(new LookupClientOptions(ip));
-                }
-                else
-                {
-                    throw new ArgumentException("Invalid IP address", nameof(serverIpAddress));
+                    if (IPAddress.TryParse(ip, out var ipAddr))
+                    {
+                        ips.Add(ipAddr);
+                    }
                 }
             }
+            if(ips.Count > 0)
+            {
+                _client = new LookupClient(ips.ToArray());
+            }
+            else
+            {
+                _client = new LookupClient();
+            }
+        }
+        public object[] GetRecord(string name, QueryType queryType)
+        {
             List<object> result = new List<object>();
             
             switch (queryType)
@@ -35,8 +48,11 @@ namespace SpfAnalyzer
                     }
                     break;
                 case QueryType.TXT:
-
-                    var txtRecords = _client.Query(name, queryType).AllRecords.TxtRecords();
+                    var question = new DnsQuestion(name, queryType);
+                    var opts =  new DnsQueryAndServerOptions();
+                    
+                    var response = _client.Query(question, opts);
+                    var txtRecords = response.AllRecords.TxtRecords();
                     foreach (var record in txtRecords)
                     {
                         result.Add(string.Join(string.Empty,record.Text));
@@ -49,14 +65,20 @@ namespace SpfAnalyzer
                         result.Add(record.Exchange.Value);
                     }
                     break;
-
+                case QueryType.CNAME:
+                    var cnameRecords = _client.Query(name, queryType).AllRecords.CnameRecords();
+                    foreach (var record in cnameRecords)
+                    {
+                        result.Add(record.CanonicalName.Value);
+                    }
+                    break;
             }
             return [.. result];
         }
 
-        public static string[] GetSpfRecord(string name, string? serverIpAddress = null)
+        public string[] GetSpfRecord(string name)
         {
-            var data = GetRecord(name, QueryType.TXT, serverIpAddress);
+            var data = GetRecord(name, QueryType.TXT);
             List<string> result = new List<string>();
             if(null!= data)
             {
@@ -74,9 +96,45 @@ namespace SpfAnalyzer
             return result.ToArray();
         }
 
-        public static string[] GetDkimRecord(string name, string? serverIpAddress = null)
+        public DkimSource[] GetDkimRecord(string name)
         {
-            var data = GetRecord(name, QueryType.TXT, serverIpAddress);
+            var retVal = new List<DkimSource>();
+            var data = GetRecord(name, QueryType.CNAME);
+            List<string> result = new List<string>();
+            if (null != data && data.Length > 0)
+            {
+                //we have a CNAME record
+                foreach (var item in data)
+                {
+                    if (!(item is string))
+                        continue;
+                    var record = new DkimSource();
+                    record.Source = (string)item;
+                    var data2 = GetRecord(record.Source, QueryType.TXT);
+                    record.Value.AddRange(data2.Select(x => (string)x));
+                    retVal.Add(record);
+                }
+            }
+            else
+            {
+                data = GetRecord(name, QueryType.TXT);
+                foreach(var item in data)
+                {
+                    if (!(item is string))
+                        continue;
+                    var record = new DkimSource();
+                    record.Source = name;
+                    record.Value.Add((string)item);
+                    retVal.Add(record);
+                }
+            }
+
+            return retVal.ToArray();
+        }
+
+        public string[] GetDmarcRecord(string name)
+        {
+            var data = GetRecord(name, QueryType.TXT);
             List<string> result = new List<string>();
             if (null != data)
             {
@@ -90,23 +148,5 @@ namespace SpfAnalyzer
             }
             return result.ToArray();
         }
-
-        public static string[] GetDmarcRecord(string name, string? serverIpAddress = null)
-        {
-            var data = GetRecord(name, QueryType.TXT, serverIpAddress);
-            List<string> result = new List<string>();
-            if (null != data)
-            {
-                foreach (var item in data)
-                {
-                    if (!(item is string))
-                        continue;
-                    result.Add((string)item);
-
-                }
-            }
-            return result.ToArray();
-        }
-
     }
 }

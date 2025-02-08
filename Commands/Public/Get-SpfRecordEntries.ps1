@@ -33,15 +33,19 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
         [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
-        [string]$Domain
+        [string]$Domain,
+        [Parameter(ParameterSetName = 'DomainName')]
+        [string]$DnsServerIpAddress
+
     )
 
+    
     process
     {
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            $record = Get-SpfRecord -Domain $Domain
+            $record = Get-SpfRecord -Domain $Domain -DnsServerIpAddress $DnsServerIpAddress
         }
         else
         {

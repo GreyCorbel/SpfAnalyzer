@@ -33,14 +33,16 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     {
         $logger = new-object AutomationHelper.Logger($PSCmdlet)
         $parsedRecord = $null
+        $dns = new-object SpfAnalyzer.Dns($DnsServerIpAddress)
     }
     process
     {
         $dnsName = $record + '.' + $domain
-        $dkimRecords = [SpfAnalyzer.Dns]::GetDkimRecord($dnsName, $DnsServerIpAddress)
+        $dkimRecords = $dns.GetDkimRecord($dnsName)
         foreach($record in $dkimRecords)
         {
-            if([SpfAnalyzer.DkimRecord]::TryParse($domain, $dnsName, $record, $logger, [ref] $parsedRecord))
+            #we can have cname pointing to nowhere, so we need to check if we have any record value
+            if($record.Value.Count -gt 0 -and [SpfAnalyzer.DkimRecord]::TryParse($domain, $dnsName, $record.Source, $record.Value[0], $logger, [ref] $parsedRecord))
             {
                 $parsedRecord
             }

@@ -53,7 +53,10 @@
                         <Width>25</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Width>60</Width>
+                        <Width>50</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>66</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
                         <Width>25</Width>
@@ -67,6 +70,9 @@
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>Domain</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Record</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>Source</PropertyName>

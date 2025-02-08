@@ -68,7 +68,7 @@ namespace SpfAnalyzer
 
         }
 
-        public static bool TryParse(string domain, string source, string rawRecord, int depth, ILogger? logger, out SpfRecord[] spfRecords)
+        public static bool TryParse(Dns dns, string domain, string source, string rawRecord, int depth, ILogger? logger, out SpfRecord[] spfRecords)
         {
             logger?.LogVerbose($"Parsing SPF record: {rawRecord}");
             var record = new SpfRecord(source, domain, rawRecord);
@@ -104,10 +104,10 @@ namespace SpfAnalyzer
                     //prevent infinite recursion
                     if (retVal.Where(x => string.Equals(x.Source, includeDomain, StringComparison.OrdinalIgnoreCase)).Count() == 0)
                     {
-                        var additionalRecords = Dns.GetSpfRecord(includeDomain);
+                        var additionalRecords = dns.GetSpfRecord(includeDomain);
                         foreach (var additionalRecord in additionalRecords)
                         {
-                            if( TryParse(domain, includeDomain, additionalRecord, record.Depth + 1, logger, out SpfRecord[] additionalSpfRecord))
+                            if( TryParse(dns, domain, includeDomain, additionalRecord, record.Depth + 1, logger, out SpfRecord[] additionalSpfRecord))
                                 retVal.AddRange(additionalSpfRecord);
                         }
                     }
@@ -148,11 +148,11 @@ namespace SpfAnalyzer
                     record._entries.Add(new SpfEntry(domain, source, "a", part.Substring(start).Replace(":", string.Empty)));
                     if (mask > -1)
                     {
-                        ParseAWithMaskMechanism(domainName, $"{domainName} {part}", mask, ref record);
+                        ParseAWithMaskMechanism(dns, domainName, $"{domainName} {part}", mask, ref record);
                     }
                     else
                     {
-                        ParseAMechanism(domainName, $"{domainName} {part}", ref record);
+                        ParseAMechanism(dns, domainName, $"{domainName} {part}", ref record);
                     }
                 }
                 else if (continueParsing && (part.StartsWith("mx") || part.StartsWith("+mx")))
@@ -175,16 +175,16 @@ namespace SpfAnalyzer
                         start = 3;
                     }
                     record._entries.Add(new SpfEntry(domain, source, "mx", part.Substring(start).Replace(":", string.Empty)));
-                    var mx = Dns.GetRecord(domain, DnsClient.QueryType.MX);
+                    var mx = dns.GetRecord(domain, DnsClient.QueryType.MX);
                     foreach (var rec in mx)
                     {
                         if (rec is string)
                         {
                             var mxDomain = (string)rec;
                             if (mask == -1)
-                                ParseAMechanism(mxDomain, $"{mxDomain} {part}", ref record);
+                                ParseAMechanism(dns, mxDomain, $"{mxDomain} {part}", ref record);
                             else
-                                ParseAWithMaskMechanism(mxDomain, $"{mxDomain} {part}", mask, ref record);
+                                ParseAWithMaskMechanism(dns, mxDomain, $"{mxDomain} {part}", mask, ref record);
                         }
                     }
                 }
@@ -212,10 +212,10 @@ namespace SpfAnalyzer
                 {
                     var redirectDomain = part.Substring(9);
                     record._entries.Add(new SpfEntry(domain, source, "redirect", redirectDomain));
-                    var additionalRecords = Dns.GetSpfRecord(redirectDomain);
+                    var additionalRecords = dns.GetSpfRecord(redirectDomain);
                     foreach (var additionalRecord in additionalRecords)
                     {
-                        if( TryParse(domain, redirectDomain, additionalRecord, record.Depth + 1, logger, out var additionalSpfRecord))
+                        if( TryParse(dns, domain, redirectDomain, additionalRecord, record.Depth + 1, logger, out var additionalSpfRecord))
                             retVal.AddRange(additionalSpfRecord);
                     }
                 }
@@ -245,24 +245,24 @@ namespace SpfAnalyzer
             return true;
         }
 
-        static void ParseAMechanism(string fqdn, string source, ref SpfRecord record)
+        static void ParseAMechanism(Dns dns, string fqdn, string source, ref SpfRecord record)
         {
             var records = new List<IPAddress>();
 
-            records.AddRange(Dns.GetRecord(fqdn, DnsClient.QueryType.A).Where(x => x is IPAddress).Select(x => (IPAddress)x));
-            records.AddRange(Dns.GetRecord(fqdn, DnsClient.QueryType.AAAA).Where(x => x is IPAddress).Select(x => (IPAddress)x));
+            records.AddRange(dns.GetRecord(fqdn, DnsClient.QueryType.A).Where(x => x is IPAddress).Select(x => (IPAddress)x));
+            records.AddRange(dns.GetRecord(fqdn, DnsClient.QueryType.AAAA).Where(x => x is IPAddress).Select(x => (IPAddress)x));
             foreach (var rec in records)
             {
                 record._ipAddresses.Add(new SpfIpAddress(source, rec));
             }
         }
 
-        static void ParseAWithMaskMechanism(string fqdn, string source, int mask, ref SpfRecord record)
+        static void ParseAWithMaskMechanism(Dns dns, string fqdn, string source, int mask, ref SpfRecord record)
         {
             var records = new List<IPAddress>();
 
-            records.AddRange(Dns.GetRecord(fqdn, DnsClient.QueryType.A).Where(x => x is IPAddress).Select(x => (IPAddress)x));
-            records.AddRange(Dns.GetRecord(fqdn, DnsClient.QueryType.AAAA).Where(x => x is IPAddress).Select(x => (IPAddress)x));
+            records.AddRange(dns.GetRecord(fqdn, DnsClient.QueryType.A).Where(x => x is IPAddress).Select(x => (IPAddress)x));
+            records.AddRange(dns.GetRecord(fqdn, DnsClient.QueryType.AAAA).Where(x => x is IPAddress).Select(x => (IPAddress)x));
             foreach (var rec in records)
             {
                 record._ipNetworks.Add(new SpfIpNetwork(source, rec, mask));

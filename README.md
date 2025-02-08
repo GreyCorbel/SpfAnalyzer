@@ -44,10 +44,18 @@ Test-SpfRecord `
 | Test-SpfHost -IpAddress 104.44.112.128 
 ```
 
+## Getting DMARC records
+Module allows getting and parsing DMARC record for domain.
+```powershell
+Get-DmarcRecord -Domain microsoft.com
+```
+
+
+
 # Features and limitations
 Module is cross-platform and relies on DnsClient.NET package.  
 Module provides additional helper commands that return list of IP addresses and IP subnets found in publshed policy.  
 IPv4 and IPv6 addresses are supported.  
-Only Powershell Core edition is supported.  
+Only Powershell Core edition is supported, and lowest version where module works is 7.4 - this is because of dependency on .net8.0.  
 Macro expansion in `exists` mechanism does not yet cover complete specification in RFC 7208 - looking for collaborators to enhance parsing.
 Macros in `include` method aren't currently expanded and such record is not tried to be parsed. Hoever, such record is processed by `Test-SpfHost` command

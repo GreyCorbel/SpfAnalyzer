@@ -34,14 +34,16 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     {
         $logger = new-object AutomationHelper.Logger($PSCmdlet)
         $parsedRecord = $null
+        $dns = new-object SpfAnalyzer.Dns($DnsServerIpAddress)
     }
     process
     {
         $dnsName = $record + '.' + $domain
-        $dkimRecords = [SpfAnalyzer.Dns]::GetDkimRecord($dnsName, $DnsServerIpAddress)
+        $dkimRecords = $dns.GetDkimRecord($dnsName)
         foreach($record in $dkimRecords)
         {
-            if([SpfAnalyzer.DkimRecord]::TryParse($domain, $dnsName, $record, $logger, [ref] $parsedRecord))
+            #we can have cname pointing to nowhere, so we need to check if we have any record value
+            if($record.Value.Count -gt 0 -and [SpfAnalyzer.DkimRecord]::TryParse($domain, $dnsName, $record.Source, $record.Value[0], $logger, [ref] $parsedRecord))
             {
                 $parsedRecord
             }
@@ -82,11 +84,12 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     {
         $logger = new-object AutomationHelper.Logger($PSCmdlet)
         $parsedRecord = $null
+        $dns = new-object SpfAnalyzer.Dns($DnsServerIpAddress)
     }
     process
     {
         $dnsName = '_dmarc.{0}' -f $domain
-        $records = [SpfAnalyzer.Dns]::GetDmarcRecord($dnsName, $DnsServerIpAddress)
+        $records = $dns.GetDmarcRecord($dnsName)
         foreach($record in $records)
         {
             if([SpfAnalyzer.DmarcRecord]::TryParse($domain, $dnsName, $record, $logger, [ref] $parsedRecord))
@@ -132,13 +135,14 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     {
         $logger = new-object AutomationHelper.Logger($PSCmdlet)
         $parsedRecord = $null
+        $dns = new-object SpfAnalyzer.Dns($DnsServerIpAddress)
     }
     process
     {
-        $spfRecords = [SpfAnalyzer.Dns]::GetSpfRecord($domain, $DnsServerIpAddress)
+        $spfRecords = $dns.GetSpfRecord($domain)
         foreach($spfRecord in $spfRecords)
         {
-            $success = [SpfAnalyzer.SpfRecord]::TryParse($domain, $domain, $spfRecord, 0, $logger, [ref] $parsedRecord)
+            $success = [SpfAnalyzer.SpfRecord]::TryParse($dns, $domain, $domain, $spfRecord, 0, $logger, [ref] $parsedRecord)
             if($success)
             {
                 $parsedRecord
@@ -181,15 +185,19 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
         [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
-        [string]$Domain
+        [string]$Domain,
+        [Parameter(ParameterSetName = 'DomainName')]
+        [string]$DnsServerIpAddress
+
     )
 
+    
     process
     {
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            $record = Get-SpfRecord -Domain $Domain
+            $record = Get-SpfRecord -Domain $Domain -DnsServerIpAddress $DnsServerIpAddress
         }
         else
         {
@@ -227,7 +235,9 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
         [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
-        [string]$Domain
+        [string]$Domain,
+        [Parameter(ParameterSetName = 'DomainName')]
+        [string]$DnsServerIpAddress
     )
 
     process
@@ -235,7 +245,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            $record = Get-SpfRecord -Domain $Domain 
+            $record = Get-SpfRecord -Domain $Domain  -DnsServerIpAddress $DnsServerIpAddress
         }
         else
         {
@@ -274,7 +284,9 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'Record')]
         [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
-        [string]$Domain
+        [string]$Domain,
+        [Parameter(ParameterSetName = 'DomainName')]
+        [string]$DnsServerIpAddress
     )
 
     process
@@ -282,7 +294,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            $record = Get-SpfRecord -Domain $Domain 
+            $record = Get-SpfRecord -Domain $Domain -DnsServerIpAddress $DnsServerIpAddress
         }
         else
         {
@@ -325,6 +337,8 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [SpfAnalyzer.SpfRecord]$SpfRecord,
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
+        [Parameter(ParameterSetName = 'DomainName')]
+        [string]$DnsServerIpAddress,
         [Parameter(Mandatory)]
         [string]$IpAddress,
         [Parameter()]
@@ -337,7 +351,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         if ($PSCmdlet.ParameterSetName -eq 'DomainName')
         {
             Write-Verbose "Processing $Domain"
-            $spfRecords = Get-SpfRecord -Domain $Domain `
+            $spfRecords = Get-SpfRecord -Domain $Domain -DnsServerIpAddress $DnsServerIpAddress
         }
         else
         {
@@ -403,7 +417,7 @@ function Test-SpfRecord
     SpfRecord[]
 
 .EXAMPLE
-Get-SpfRecord -Domain 'mydomain.com' -RawRecord 'v=spf1 include:spf.protection.outlook.com -all'
+Test-SpfRecord -Domain 'mydomain.com' -RawRecord 'v=spf1 include:spf.protection.outlook.com -all'
 Description
 -----------
 CHecks if SPF record can be parsed correctly.
@@ -420,9 +434,18 @@ param
         [string]$Domain
     )
 
+    begin
+    {
+        $logger = new-object AutomationHelper.Logger($PSCmdlet)
+        $dns = new-object SpfAnalyzer.Dns
+    }
     process
     {
-        [SpfAnalyzer.SpfRecord]::Parse($Domain, $Domain, $RawRecord, 0)
+        $parsedRecord = $null
+        if([SpfAnalyzer.SpfRecord]::TryParse($dns, $Domain, $Domain, $RawRecord, 0, $logger, [ref] $parsedRecord))
+        {
+            $parsedRecord
+        }
     }
 }
 #endregion Public commands

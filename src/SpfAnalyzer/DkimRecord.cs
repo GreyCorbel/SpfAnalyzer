@@ -11,6 +11,7 @@ namespace SpfAnalyzer
         static string[] _tags = ["v=", "h=", "k=", "n=", "p=", "s=", "t=", "o="];
         string? _rawRecord;
         public string? Domain { get; set; }
+        public string Record { get; set; }
         public string Version { get; set; } = "DKIM1";
         public string? Source { get; set; }
         public DkimPublicKey? PublicKey { get; set; }
@@ -22,18 +23,19 @@ namespace SpfAnalyzer
         {
         }
 
-        public DkimRecord(string domain, string source, string rawRecord)
+        public DkimRecord(string domain, string recordFqdn, string source, string rawRecord)
         {
             Domain = domain;
             Source = source;
+            Record = recordFqdn;
             _rawRecord = rawRecord;
         }
 
-        public static bool TryParse(string domain, string source, string rawRecord, ILogger? logger, out DkimRecord[] dkimRecords)
+        public static bool TryParse(string domain, string recordFqdn,  string source, string rawRecord, ILogger? logger, out DkimRecord[] dkimRecords)
         {
             logger?.LogVerbose($"Processing record {rawRecord}");
             var retVal = new List<DkimRecord>();
-            var record = new DkimRecord(domain, source, rawRecord);
+            var record = new DkimRecord(domain, recordFqdn, source, rawRecord);
             retVal.Add(record);
 
             var parts = rawRecord.Split(';');

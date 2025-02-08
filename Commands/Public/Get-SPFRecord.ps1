@@ -34,13 +34,14 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     {
         $logger = new-object AutomationHelper.Logger($PSCmdlet)
         $parsedRecord = $null
+        $dns = new-object SpfAnalyzer.Dns($DnsServerIpAddress)
     }
     process
     {
-        $spfRecords = [SpfAnalyzer.Dns]::GetSpfRecord($domain, $DnsServerIpAddress)
+        $spfRecords = $dns.GetSpfRecord($domain)
         foreach($spfRecord in $spfRecords)
         {
-            $success = [SpfAnalyzer.SpfRecord]::TryParse($domain, $domain, $spfRecord, 0, $logger, [ref] $parsedRecord)
+            $success = [SpfAnalyzer.SpfRecord]::TryParse($dns, $domain, $domain, $spfRecord, 0, $logger, [ref] $parsedRecord)
             if($success)
             {
                 $parsedRecord

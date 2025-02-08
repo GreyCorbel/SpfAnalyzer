@@ -9,7 +9,7 @@ function Test-SpfRecord
     SpfRecord[]
 
 .EXAMPLE
-Get-SpfRecord -Domain 'mydomain.com' -RawRecord 'v=spf1 include:spf.protection.outlook.com -all'
+Test-SpfRecord -Domain 'mydomain.com' -RawRecord 'v=spf1 include:spf.protection.outlook.com -all'
 Description
 -----------
 CHecks if SPF record can be parsed correctly.
@@ -26,8 +26,17 @@ param
         [string]$Domain
     )
 
+    begin
+    {
+        $logger = new-object AutomationHelper.Logger($PSCmdlet)
+        $dns = new-object SpfAnalyzer.Dns
+    }
     process
     {
-        [SpfAnalyzer.SpfRecord]::Parse($Domain, $Domain, $RawRecord, 0)
+        $parsedRecord = $null
+        if([SpfAnalyzer.SpfRecord]::TryParse($dns, $Domain, $Domain, $RawRecord, 0, $logger, [ref] $parsedRecord))
+        {
+            $parsedRecord
+        }
     }
 }
