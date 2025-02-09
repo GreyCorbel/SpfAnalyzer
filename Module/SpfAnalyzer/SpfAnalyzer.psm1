@@ -28,7 +28,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory)]
         [string]$Record,
         [Parameter()]
-        [string]$DnsServerIpAddress
+        [string[]]$DnsServerIpAddress
     )
     begin
     {
@@ -40,10 +40,10 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
     {
         $dnsName = $record + '.' + $domain
         $dkimRecords = $dns.GetDkimRecord($dnsName)
-        foreach($record in $dkimRecords)
+        foreach($dkimRcord in $dkimRecords)
         {
             #we can have cname pointing to nowhere, so we need to check if we have any record value
-            if($record.Value.Count -gt 0 -and [SpfAnalyzer.DkimRecord]::TryParse($domain, $dnsName, $record.Source, $record.Value[0], $logger, [ref] $parsedRecord))
+            if($dkimRcord.Value.Count -gt 0 -and [SpfAnalyzer.DkimRecord]::TryParse($domain, $dnsName, $dkimRcord.Source, $dkimRcord.Value[0], $logger, [ref] $parsedRecord))
             {
                 $parsedRecord
             }
@@ -77,7 +77,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Domain,
         [Parameter()]
-        [string]$DnsServerIpAddress
+        [string[]]$DnsServerIpAddress
     )
 
     begin
@@ -128,7 +128,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Domain,
         [Parameter()]
-        [string]$DnsServerIpAddress
+        [string[]]$DnsServerIpAddress
     )
 
     begin
@@ -136,6 +136,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         $logger = new-object AutomationHelper.Logger($PSCmdlet)
         $parsedRecord = $null
         $dns = new-object SpfAnalyzer.Dns($DnsServerIpAddress)
+        $dns.Timeout = [timespan]::FromSeconds(30)
     }
     process
     {
@@ -187,7 +188,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
         [Parameter(ParameterSetName = 'DomainName')]
-        [string]$DnsServerIpAddress
+        [string[]]$DnsServerIpAddress
 
     )
 
@@ -237,7 +238,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
         [Parameter(ParameterSetName = 'DomainName')]
-        [string]$DnsServerIpAddress
+        [string[]]$DnsServerIpAddress
     )
 
     process
@@ -286,7 +287,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
         [Parameter(ParameterSetName = 'DomainName')]
-        [string]$DnsServerIpAddress
+        [string[]]$DnsServerIpAddress
     )
 
     process
@@ -338,7 +339,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
         [Parameter(ParameterSetName = 'DomainName')]
-        [string]$DnsServerIpAddress,
+        [string[]]$DnsServerIpAddress,
         [Parameter(Mandatory)]
         [string]$IpAddress,
         [Parameter()]

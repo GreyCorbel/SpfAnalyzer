@@ -27,7 +27,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline)]
         [string]$Domain,
         [Parameter()]
-        [string]$DnsServerIpAddress
+        [string[]]$DnsServerIpAddress
     )
 
     begin
@@ -35,6 +35,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         $logger = new-object AutomationHelper.Logger($PSCmdlet)
         $parsedRecord = $null
         $dns = new-object SpfAnalyzer.Dns($DnsServerIpAddress)
+        $dns.Timeout = [timespan]::FromSeconds(30)
     }
     process
     {

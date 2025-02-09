@@ -28,7 +28,7 @@ More about SPF, see http://www.openspf.org/ and https://tools.ietf.org/html/rfc7
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'DomainName')]
         [string]$Domain,
         [Parameter(ParameterSetName = 'DomainName')]
-        [string]$DnsServerIpAddress
+        [string[]]$DnsServerIpAddress
     )
 
     process
