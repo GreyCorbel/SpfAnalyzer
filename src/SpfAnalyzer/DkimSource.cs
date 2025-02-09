@@ -11,6 +11,6 @@ namespace SpfAnalyzer
         //source record: either TXT or CNAME
         public string Source { get; set; }
         //value of the record
-        public List<string> Value { get; set; } = new List<string>();
+        public string[] Value { get; set; }
     }
 }
